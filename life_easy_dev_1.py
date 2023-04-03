@@ -5,7 +5,7 @@ import subprocess
 import pandas as pd
 import mrcfile as mrc
 import numpy as np
-# from multiprocessing import Process
+from multiprocessing import Process
 
 
 def clean_R1_Probability(working_dir,r1_output:str,bioEM_template):

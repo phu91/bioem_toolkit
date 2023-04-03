@@ -101,7 +101,7 @@ def validate_zipfile(path_to_zipfile):
 		raise Exception("========== BAD ZIP FILE!")
 
 def process_output_round2(delete_choice,MODEL,GROUP,path_to_output,nparticle: int):
-    	sorted_output_path=os.path.join(path_to_output,"OutPut_SORTED_%s-%s"%(MODEL,GROUP))
+	sorted_output_path=os.path.join(path_to_output,"OutPut_SORTED_%s-%s"%(MODEL,GROUP))
 	with open(sorted_output_path,"w+") as out_tmp_1:
 		with zipfile.ZipFile(path_to_output+"/OutPuts_ALL_%s_%s.zip"%(MODEL,GROUP),"w") as out_zip:
 			for i in range(nparticle):

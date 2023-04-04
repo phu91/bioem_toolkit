@@ -194,6 +194,9 @@ class NORMAL_MODE_ROUND1:
 		# Strips the newline character
 		for MODEL in MODELS:
 			MODEL = MODEL.strip()
+			if MODEL[0]=='#':
+				print("%s is skipped."%(MODEL[1:]))
+				continue
 			a_model_path = os.path.join(op_v,MODEL)
 			os.makedirs(a_model_path,exist_ok='True')
 			os.makedirs(os.path.join(a_model_path,"round1"),exist_ok='True')
@@ -221,33 +224,25 @@ class NORMAL_MODE_ROUND1:
 					outfile.close()
 				file.close()
 
-	def RUN(self,choice):
+	def RUN(self):
 		MODELS_LIST = open(self.model_list)
 		MODELS = MODELS_LIST.readlines()
 		GROUPS = pd.read_csv(self.group_list,names=['particle_file','group','nframe'],delim_whitespace='True',comment='#')
 		for MODEL in MODELS:
 			MODEL = MODEL.strip()
+			if MODEL[0]=='#':
+				print("%s is skipped."%(MODEL[1:]))
+				continue
 			a_model_path = os.path.join(op_v,MODEL)
 			round1_path = os.path.join(a_model_path,"round1")
-			GROUP=None
-			if choice=="A" or choice =="a":
-				for ind, GROUP in GROUPS.iterrows():
-					r1_group_path =os.path.join(round1_path,GROUP['group'])
-					slurm_file_out_path =os.path.join(r1_group_path,"slurm-r1-rusty.sh")
-					os.chmod(slurm_file_out_path,stat.S_IRWXU)
-					# print(slurm_file_out_path)
-					os.chdir(r1_group_path)
-					sbatch_cmd = "sbatch "+slurm_file_out_path
-					subprocess.run(str(sbatch_cmd),shell=True, check=True)
-			else:
-				GROUP=choice
-				r1_group_path =os.path.join(round1_path,GROUP)
-				slurm_file_out_path =str(r1_group_path)+"/slurm-r1-rusty.sh"
-				os.chmod(r1_group_path+"/slurm-r1-rusty.sh",stat.S_IRWXU)
+			for ind, GROUP in GROUPS.iterrows():
+				r1_group_path =os.path.join(round1_path,GROUP['group'])
+				slurm_file_out_path =os.path.join(r1_group_path,"slurm-r1-rusty.sh")
+				os.chmod(slurm_file_out_path,stat.S_IRWXU)
 				# print(slurm_file_out_path)
+				os.chdir(r1_group_path)
 				sbatch_cmd = "sbatch "+slurm_file_out_path
 				subprocess.run(str(sbatch_cmd),shell=True, check=True)
-
 
 class NORMAL_MODE_ROUND2:
 	def __init__(self,model_path,model_list,group_list,param_path,particle_path,output_path):

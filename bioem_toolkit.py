@@ -285,7 +285,7 @@ class NORMAL_MODE_ROUND2:
 					group_param_path=os.path.join(r2_group_path+subdir_list[sub_dir])
 
 					if os.path.basename(group_param_path)=="tmp_files":
-						shutil.copy(param_v+"Param_BioEM_ABC_template",group_param_path)
+						shutil.copy(param_v+"/Param_BioEM_ABC_template",group_param_path)
 						param_bio_template_path = os.path.join(group_param_path,"Param_BioEM_ABC_template")
 						shutil.copy(r1_group_path+"/Output_Probabilities",group_param_path+"/Output_Probabilities-R1")
 						Out_Prob_R1_path = os.path.join(group_param_path,"Output_Probabilities-R1")
@@ -301,7 +301,7 @@ class NORMAL_MODE_ROUND2:
 
 					elif os.path.basename(group_param_path)=="tasks":
 					# if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
-						shutil.copy(param_v+"launch-one-template.sh",group_param_path)
+						shutil.copy(param_v+"/launch-one-template.sh",group_param_path)
 						launch_one_path = os.path.join(group_param_path,"launch-one-template.sh")
 						# print(launch_one_path)
 						with open(launch_one_path,"r+") as launchIn:

@@ -7,13 +7,13 @@
 #SBATCH -J r1-WhatModel
 # Queue (Partition):
 #SBATCH --constraint=rome
-#SBATCH --partition=mem
+#SBATCH --partition=ccm
 # Request 1 node(s)
 #SBATCH --nodes=1
 # Set the number of tasks per node (=MPI ranks)
 #SBATCH --ntasks-per-node=16
 # Set the number of threads per rank (=OpenMP threads)
-#SBATCH --cpus-per-task=6
+#SBATCH --cpus-per-task=8
 
 # Wall clock limit:
 #SBATCH --time=48:00:00

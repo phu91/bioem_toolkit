@@ -809,9 +809,9 @@ class ANALYSIS_SUIT:
 		matrix_model_norm.to_csv(bife_output_filename,sep='\t',float_format='%1.6f',header=None,index=False)
 
 		print("\n========== The CV profile is SORTED on %s and PMAT is generated!"%(cv_choice))
-		return cv_choice
+	
 	# @timer_func
-	def execute_cryoBIFE(self,CVchoice):
+	def execute_cryoBIFE(self):
 		import cmdstanpy
 		from cmdstanpy import CmdStanModel
 

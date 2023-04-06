@@ -206,7 +206,7 @@ class NORMAL_MODE_ROUND1:
                 r1_group_path =os.path.join(round1_path,GROUP['group'])
                 os.makedirs(r1_group_path,exist_ok='True')
 
-                shutil.copy(os.path.join(mp_v,MODEL+".txt"),a_model_path)
+                shutil.copy(os.path.join(mp_v,MODEL),a_model_path)
                 shutil.copy(param_v+"/Param_BioEM_ABC_template",round1_path+"/Param_BioEM_ABC")
                 shutil.copy(param_v+"/Quat_36864",round1_path)
 
@@ -225,6 +225,7 @@ class NORMAL_MODE_ROUND1:
                 file.close()
 
     def RUN(self):
+        print('running!')
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(self.group_list,names=['particle_file','group','nframe'],delim_whitespace='True',comment='#')
@@ -422,7 +423,11 @@ class CONSENSUS_MODE_ROUND_1:
     def PREP(self):
         GROUPS = pd.read_csv(self.group_list,names=['particle_file','group','nframe'],delim_whitespace='True',comment='#')
         #consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
-        consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
+        if args.command_line_mode==False:
+            consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
+        else:
+            consensus_MODEL_name = args.consensus_model
+
         consensus_MODEL_path = os.path.join(self.output_path,consensus_MODEL_name)
         os.makedirs(consensus_MODEL_path,exist_ok='True')
         MODEL = consensus_MODEL_name
@@ -432,11 +437,13 @@ class CONSENSUS_MODE_ROUND_1:
         os.makedirs(round1_path,exist_ok='True')
 
         for ind, GROUP in GROUPS.iterrows():
+            print('making run file')
             r1_group_path =os.path.join(round1_path,GROUP['group'])
             os.makedirs(r1_group_path,exist_ok='True')
-            shutil.copy(os.path.join(mp_v,MODEL+".txt"),consensus_MODEL_path)
+            shutil.copy(os.path.join(mp_v,MODEL),consensus_MODEL_path)
             shutil.copy(param_v+"/Param_BioEM_ABC_template",round1_path+"/Param_BioEM_ABC")
             shutil.copy(param_v+"/Quat_36864",round1_path)
+            #TODO user specified template run file
             with open(param_v+"/slurm-r1-template.sh",'r+') as file:
                 slurm_file = file.read()
                 slurm_file_out_path =str(r1_group_path)+"/slurm-r1-rusty.sh"
@@ -453,7 +460,10 @@ class CONSENSUS_MODE_ROUND_1:
 
     def RUN(self):
         GROUPS = pd.read_csv(self.group_list,names=['particle_file','group','nframe'],delim_whitespace='True',comment='#')
-        consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
+        if args.command_line_mode==False:
+            consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
+        else:
+            consensus_MODEL_name = args.consensus_model
         consensus_MODEL_path = os.path.join(self.output_path,consensus_MODEL_name)
         print("\n========== CONSENSUS PATH: %s"%(consensus_MODEL_path))
         round1_path = os.path.join(consensus_MODEL_path,"round1")
@@ -963,14 +973,17 @@ Select the number to run:
 if  __name__ == "__main__":
     parser = argparse.ArgumentParser(description="""
     # Let us create a user contact.""")
-    parser.add_argument("-mp", help="Path to models")
-    parser.add_argument("-ml", help="List of all models")
+    parser.add_argument("-mp", help="Absolute path to where models are stored.")
+    parser.add_argument("-ml", help="Text file with a list of all models.")
     parser.add_argument("-gl", help="List of groups which particles are organised into. Eg. 0-10k 0-10k.mrcs 10000")
-    parser.add_argument("-param", help="Absolute path to parameters files which this script uses. Usually stored in the github repo .  ")
+    parser.add_argument("-param", help="Absolute path to parameters files which this script uses. Usually stored in the github repo in 'bioem_toolkit/library'.")
     parser.add_argument("-pp", help="Absolute path of directory where particle .mrcs files are stored.")
-    parser.add_argument("-op", help="Output Path")
-    parser.add_argument("-cons", help="Name of consensus model. The model must be in the particles directory. When this flag is used the script will run in consensus mode. ")
-    parser.add_argument("-r ", help="Specify which round of bioem to run. Round 1 or Round 2. 'both' is also an acceptable keyword. ")
+    parser.add_argument("-op", help="Directory where output will be stored.")
+    parser.add_argument("--consensus_model",'-c', dest='consensus_model', help="Name of consensus model. The model must be in the particles directory. Specify without the '.txt' extension. When this flag is used the script will run in consensus mode.")
+    parser.add_argument("-d",'--make-directories', dest='make_directories', action='store_true', help="When this flag is set, the script will set up the directory tree for you to run bioem. You will need to do this at least once.")
+    parser.add_argument("-r ", "--round", dest="round_choice",  help="Specify which round of bioem to run. Round 1 or Round 2. 'both' is also an acceptable keyword. ", type=str)
+    parser.add_argument("-cmd", "--command_line_mode", dest = "command_line_mode",  action="store_true",  help="Choose whether to run the code in interactive mode.")
+    parser.add_argument("-s", "--submit", dest = "submit",  action="store_true",  help="Submit the job scripts.")
 
     args = parser.parse_args()
 
@@ -992,9 +1005,16 @@ if  __name__ == "__main__":
 
 #### TESTING ####
 ####
+#phu the logic of this is so confusing. we need to rewrite it.
 final_choice = 0
 while final_choice <5:
-    mode_choice = input(note0+"\n")
+    if args.command_line_mode == False:
+        mode_choice = input(note0+"\n")
+    else: 
+        if args.consensus_model is not None:
+            mode_choice = '2'    
+            final_choice = 5
+        
     if mode_choice =='1':
         print("========== YOU CHOSE NORMAL MODE!!\n")
         job1 = NORMAL_MODE_ROUND1(mp_v,ml_v,gl_v,param_v,particle_v,op_v)
@@ -1033,9 +1053,13 @@ while final_choice <5:
         print("========== YOU CHOSE CONSENSUS MODE!!\n")
         job1 = CONSENSUS_MODE_ROUND_1(mp_v,ml_v,gl_v,param_v,particle_v,op_v)
         job2 = CONSENSUS_MODE_ROUND_2(mp_v,ml_v,gl_v,param_v,particle_v,op_v)
-        create_consensus = input("Do you want to create CONSENSUS directory? (0: No, 1:Yes)?\n")
+        if args.command_line_mode == False:
+            create_consensus_directories = input("Do you want to create CONSENSUS directory? (0: No, 1:Yes)?\n")
+        else:
+            if args.make_directories is not None:
+                create_consensus_directories = str(args.make_directories)
 
-        if create_consensus=='0':
+        if create_consensus_directories=='0':
             print("========== ONLY RUN ROUND 2 for non-CONSENSUS MODELS") 
             options=input(note2_nonconsensus+"\n")
             if options=="1":
@@ -1053,16 +1077,46 @@ while final_choice <5:
                 final_choice=5
                 print("Program exited.")
         else:
-            print("========== MAKING CONSENSUS DIRECTORY!")
-            choose_round = input("Please choose the ROUND (1) or (2) or (3) for both rounds:\n")
+            #if the -cmd or --command_line_mode mode flags are specified, we skip doing things with interactive inputs.
+
+            #if the flag isn't set, this if statement will be run, prompting the user for inputs.
+            if args.command_line_mode == False:
+                print("========== MAKING CONSENSUS DIRECTORY!")
+                choose_round = input("Please choose the ROUND (1) or (2) or (3) for both rounds:\n")
+            else:
+                if args.round_choice == False and args.command_line_mode == True :
+                    raise UserWarning("It looks like you haven't specified which round of bioEM you want to run. Please specify 1, 2 or 'both' with the -r flag.")
+                if args.round_choice == 'both':
+                    choose_round = str(3)
+                elif args.round_choice == '1' or args.round_choice == '2':
+                    choose_round = str(args.round_choice)
+                else:
+                    raise UserWarning ("In command line mode, you have to specify which round of bioEM to run with the '-r' flag. Choices are to run round 1, round 2, or to run both rounds with the 'both' keyword.")
+
             if choose_round =='1':
-                options = input(note1_consensus+"\n")
+                if args.command_line_mode==False:
+                    options = input(note1_consensus+"\n")
+                else:
+                    if args.make_directories == True:
+                        print ('Preparing CONSENSUS directory files.')
+                        options = '1'
+                    elif args.submit == True: 
+                        print('trying submitting!')
+                        options = '2'
+                    else:
+                        options = '3'
+
+                print('checking')
                 if options =='1':
+                    print('prepping.')
                     job1.PREP()
-                elif options =='2':
+                    #have to add this here so that we try to submit if the submit flag is there
+                    if args.command_line_mode == True and args.submit == True:
+                        job1.RUN()
+                if options =='2':
                     job1.RUN()
                 elif options=='3':
-                    print("Program exited.")
+                    print("Round 1 specified, but you haven't chosen to prepare the directory tree or submit the jobs. For now the program will just exit.")
                     final_choice=5
             elif choose_round=='2':
                 options=input(note2_consensus+"\n")

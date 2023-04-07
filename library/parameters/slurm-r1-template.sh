@@ -2,7 +2,6 @@
 
 # Standard output and error:
 # Initial working directory:
-#SBATCH -D WhereSlurm
 # Job Name:
 #SBATCH -J r1-WhatModel
 # Queue (Partition):

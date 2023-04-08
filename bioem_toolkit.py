@@ -619,7 +619,7 @@ class CONSENSUS_MODE_ROUND_2:
                                         line[1]="SLURM_JOB_NAME=%s-R2"%(consensus_MODEL_name)
                                     elif line[1]=="WhereRound2=WhereRound2":
                                         # print(consensus_round2_group_path)
-                                        line[1]="WhereRound2=%s"%(consensus_round2_path)
+                                        line[1]="WhereRound2=%s"%(os.path.abspath(consensus_round2_path))
                                     elif line[1]=="WhereParticles=WhereParticles":
                                         line[1]="WhereParticles=%s"%(self.particle_path)
                                     elif line[1]=="WhereModel=WhereModel":
@@ -970,9 +970,9 @@ Select the number to run:
 #######################################################
 '''
 ########### USER INPUT ###########
-if  __name__ == "__main__":
+if  __name__ == "__main__":?!?jedi=0, ?!?         (prog: Optional[str]=..., usage: Optional[str]=..., *_*description: Optional[str]=...*_*, epilog: Optional[str]=..., parents: Sequence[ArgumentParser]=..., formatter_class: _FormatterClass=..., prefix_chars: str=..., fromfile_prefix_chars: Optional[str]=..., argument_default: Any=..., conflict_handler: str=..., add_help: bool=..., allow_abbrev: bool=...) ?!?jedi?!?
     parser = argparse.ArgumentParser(description="""
-    # Let us create a user contact.""")
+    # """)
     parser.add_argument("-mp", help="Absolute path to where models are stored.")
     parser.add_argument("-ml", help="Text file with a list of all models.")
     parser.add_argument("-gl", help="List of groups which particles are organised into. Eg. 0-10k 0-10k.mrcs 10000")

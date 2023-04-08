@@ -51,26 +51,26 @@ def clean_R1_Probability(working_dir,r1_output:str,bioEM_template):
         file2.close()
     # os.remove("tmp_prob")
 
-def making_orientations(r1_foo,workdir_round2):
+def making_orientations(r1_probs,workdir_round2):
     grid=125
-    r1_foo_read = open(r1_foo,"r+")
+    r1_probs_read = open(r1_probs,"r+")
     tmp_file = open("tmp_orient","w+")
-    lines = r1_foo_read.readlines()
+    lines = r1_probs_read.readlines()
     for line in range(3,len(lines)):
         tmp_file.write(lines[line])
     tmp_file.close()
-    r1_foo_read.close()
-    r1_foo_result = pd.read_csv("tmp_orient",delim_whitespace='True',header=None)
-    r1_foo_result = r1_foo_result.iloc[:,[0,1,2,3,4]]
+    r1_probs_read.close()
+    r1_probs_result = pd.read_csv("tmp_orient",delim_whitespace='True',header=None)
+    r1_probs_result = r1_probs_result.iloc[:,[0,1,2,3,4]]
     label_list=["particle","q1","q2","q3","q4"]
-    r1_foo_result.columns=label_list
+    r1_probs_result.columns=label_list
     # os.remove("tmp_orient")
-    particle_list = r1_foo_result['particle'].drop_duplicates().values
+    particle_list = r1_probs_result['particle'].drop_duplicates().values
     # print(particle_list.values[0])
     for particle_index in range(len(particle_list)):
         # print(particle_index)
         particle_now = particle_list[particle_index]
-        particle_angle = r1_foo_result.loc[(r1_foo_result['particle']==particle_now)]
+        particle_angle = r1_probs_result.loc[(r1_probs_result['particle']==particle_now)]
         total_orientation=len(particle_angle)
         nTotal_orientation=grid*total_orientation
         with open("tmp_angle_%s"%(particle_now),"w+") as tmp1:
@@ -297,7 +297,7 @@ class NORMAL_MODE_ROUND2:
                         CLEAN_P1_PROB(r2_group_path,Out_Prob_R1_path,param_bio_template_path)
                         print("========== Done with PARAMETER FILES for %s"%(MODEL))
 
-                        shutil.copy(r1_group_path+"/foo.txt",group_param_path+"/PROB_ANGLE_R1.txt")
+                        shutil.copy(r1_group_path+"/angle_output_probabilities.txt",group_param_path+"/PROB_ANGLE_R1.txt")
                         CLEAN_P1_FOO = making_orientations
                         CLEAN_P1_FOO(group_param_path+"/PROB_ANGLE_R1.txt",r2_group_path)
                         print("========== Done with ORIENTATION FILES for %s"%(MODEL))
@@ -597,7 +597,7 @@ class CONSENSUS_MODE_ROUND_2:
                     CLEAN_P1_PROB = clean_R1_Probability
                     CLEAN_P1_PROB(consensus_round2_group_path,Out_copied_Prob_R1_path,param_bio_R1_path)
                     print("========== Done with PARAMETER FILES for %s"%(consensus_MODEL_name))
-                    shutil.copy(consensus_round1_group_path+"/foo.txt",group_param_path+"/PROB_ANGLE_R1.txt")
+                    shutil.copy(consensus_round1_group_path+"/angle_output_probabilities.txt",group_param_path+"/PROB_ANGLE_R1.txt")
                     CLEAN_P1_FOO = making_orientations
                     CLEAN_P1_FOO(group_param_path+"/PROB_ANGLE_R1.txt",consensus_round2_group_path)
                     print("========== Done with ORIENTATION FILES for %s"%(consensus_MODEL_name))
@@ -970,7 +970,7 @@ Select the number to run:
 #######################################################
 '''
 ########### USER INPUT ###########
-if  __name__ == "__main__":?!?jedi=0, ?!?         (prog: Optional[str]=..., usage: Optional[str]=..., *_*description: Optional[str]=...*_*, epilog: Optional[str]=..., parents: Sequence[ArgumentParser]=..., formatter_class: _FormatterClass=..., prefix_chars: str=..., fromfile_prefix_chars: Optional[str]=..., argument_default: Any=..., conflict_handler: str=..., add_help: bool=..., allow_abbrev: bool=...) ?!?jedi?!?
+if  __name__ == "__main__":
     parser = argparse.ArgumentParser(description="""
     # """)
     parser.add_argument("-mp", help="Absolute path to where models are stored.")

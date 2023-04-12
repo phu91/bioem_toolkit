@@ -33,7 +33,7 @@ void main(int argc, char *argv[] ) {
 	base=fopen(argv[1],"r");
         out=fopen(argv[2],"w");
 	gridpoints=atoi(argv[3]);
-	sprintf(gridFilename,"./library/multiple_Quat/smallGrid_%d",gridpoints);
+	sprintf(gridFilename,"./bioem_toolkit/library/multiple_Quat/smallGrid_%d",gridpoints);
 	grid=fopen(gridFilename,"r");
 
 

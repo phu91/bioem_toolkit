@@ -52,6 +52,7 @@ def clean_R1_Probability(working_dir,r1_output:str,bioEM_template):
     # os.remove("tmp_prob")
 
 def making_orientations(r1_probs,workdir_round2):
+    #why is this 125?
     grid=125
     r1_probs_read = open(r1_probs,"r+")
     tmp_file = open("tmp_orient","w+")
@@ -78,7 +79,7 @@ def making_orientations(r1_probs,workdir_round2):
                 tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(orient['q1'],orient['q2'],orient['q3'],orient['q4']))
         tmp1.close()
         print("Run MQ on particle %s"%(particle_now))
-        multiple_quat_exe_cmd ="/mnt/home/ptang/ceph/6-ABC-Transporter/1-PROCESSING/trial2/library/multiple_Quat/multiply_quat.exe tmp_angle_%s sampling_angle_%s %s"%(particle_now,particle_now,grid)
+        multiple_quat_exe_cmd ="./bioem_toolkit/library/multiple_Quat/multiply_quat.exe tmp_angle_%s sampling_angle_%s %s"%(particle_now,particle_now,grid)
         subprocess.run(multiple_quat_exe_cmd,shell=True)
         with open("ANG_for-R2-%s"%(particle_now),'w+') as tmp1:
             tmp1.write(str(nTotal_orientation)+"\n")
@@ -87,15 +88,14 @@ def making_orientations(r1_probs,workdir_round2):
                     lines=tmp2.readlines()
                     for line in lines:
                         string=line.split()
-                        # print(string)
                         tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
                     # shutil.copy2(tmp2,tmp1)
                 tmp2.close()
         tmp1.close()
         shutil.copy("ANG_for-R2-%s"%(particle_now),os.path.join(workdir_round2,"orientations"))
-        os.remove("tmp_angle_%s"%(particle_now))
-        os.remove("sampling_angle_%s"%(particle_now))
-        os.remove("ANG_for-R2-%s"%(particle_now))
+        #os.remove("tmp_angle_%s"%(particle_now))
+        #os.remove("sampling_angle_%s"%(particle_now))
+        #os.remove("ANG_for-R2-%s"%(particle_now))
         # return particle_now
 
 def validate_zipfile(path_to_zipfile):
@@ -206,6 +206,7 @@ class NORMAL_MODE_ROUND1:
                 r1_group_path =os.path.join(round1_path,GROUP['group'])
                 os.makedirs(r1_group_path,exist_ok='True')
 
+                
                 shutil.copy(os.path.join(mp_v,MODEL),a_model_path)
                 shutil.copy(param_v+"/Param_BioEM_ABC_template",round1_path+"/Param_BioEM_ABC")
                 shutil.copy(param_v+"/Quat_36864",round1_path)
@@ -317,11 +318,13 @@ class NORMAL_MODE_ROUND2:
                                         if line[1]=="SLURM_JOB_NAME=WhatModel-R2":
                                             line[1]="SLURM_JOB_NAME=%s-R2"%(MODEL)
                                         elif line[1]=="WhereRound2=WhereRound2":
-                                            line[1]="WhereRound2=%s"%(round2_path)
+                                            line[1]="WhereRound2=%s"%(os.path.abspath(round2_path))
                                         elif line[1]=="WhereParticles=WhereParticles":
                                             line[1]="WhereParticles=%s"%(self.particle_path)
                                         elif line[1]=="WhereModel=WhereModel":
                                             line[1]="WhereModel=%s"%(os.path.abspath(self.model_path))
+                                        elif line[1]=="WhereProject=WhereProject":
+                                            line[1]="WhereProject=%s"%(os.path.abspath(self.model_path))
                                     # print(*line)
                                     string = '  '.join(map(str,line))
                                     launchOut.write(string+"\n")
@@ -568,7 +571,10 @@ class CONSENSUS_MODE_ROUND_2:
 
     def PREP_CONSENSUS(self):
         GROUPS = pd.read_csv(self.group_list,names=['particle_file','group','nframe'],delim_whitespace='True',comment='#')
-        consensus_MODEL_name = input("\n========== Please provide the CONSENSUS MODEL NAME:\n")
+        if args.command_line_mode == False:
+            consensus_MODEL_name = input("\n========== Please provide the CONSENSUS MODEL NAME:\n")
+        else:
+            consensus_MODEL_name = args.consensus_model
         consensus_MODEL_path = os.path.join(self.output_path,consensus_MODEL_name)
         os.makedirs(consensus_MODEL_path,exist_ok='True')
         os.makedirs(os.path.join(consensus_MODEL_path,"round2"),exist_ok='True')
@@ -682,7 +688,12 @@ class CONSENSUS_MODE_ROUND_2:
             print("\nYou need to load disBatch to launch ROUND 2. PROGRAM TERMINATED!!!\n")
             exit
 
-        consensus_MODEL_name = input("\nPlease provide the CONSENSUS MODEL NAME:\n")
+        if args.command_line_mode == False:
+            consensus_MODEL_name = input("\nPlease provide the CONSENSUS MODEL NAME:\n")
+        elif args.consensus_model is not None:
+            consensus_MODEL_name = args.consensus_model 
+        else:
+            raise Exception ("It looks like you haven't specified a consensus model file but you've asked to run in consensus mode. ")
         consensus_MODEL_path = os.path.join(self.output_path,consensus_MODEL_name)
         GROUPS = pd.read_csv(self.group_list,names=['particle_file','group','nframe'],delim_whitespace='True',comment='#')
         round2_path = os.path.join(consensus_MODEL_path,"round2")
@@ -728,7 +739,7 @@ class CONSENSUS_MODE_ROUND_2:
         for ind, GROUP in GROUPS.iterrows():
             r2_group_path =os.path.join(round2_path,GROUP['group'])
             path_to_your_mess = os.path.join(r2_group_path,"outputs")
-            process_output_round2(consensus_MODEL_name,GROUP['group'],path_to_your_mess,GROUP['nframe'])
+            process_output_round2(consensus_MODEL_name,GROUP['group'],path_to_your_mess,GROUP['nframe'], 1)
 
     def CLEAN_PARAMS(self):
         delete_choice = input("Do you want to keep the original files? Choose (0) NO or (1) YES\n")
@@ -1014,6 +1025,9 @@ while final_choice <5:
         if args.consensus_model is not None:
             mode_choice = '2'    
             final_choice = 5
+        if args.consensus_model is None:
+            mode_choice = '1'
+            final_choice = 5
         
     if mode_choice =='1':
         print("========== YOU CHOSE NORMAL MODE!!\n")
@@ -1101,7 +1115,7 @@ while final_choice <5:
                         print ('Preparing CONSENSUS directory files.')
                         options = '1'
                     elif args.submit == True: 
-                        print('trying submitting!')
+                        print('Submitting batch job for Round 1 in Consensus Mode!')
                         options = '2'
                     else:
                         options = '3'
@@ -1112,6 +1126,7 @@ while final_choice <5:
                     job1.PREP()
                     #have to add this here so that we try to submit if the submit flag is there
                     if args.command_line_mode == True and args.submit == True:
+                        print('Submitting batch job for Round 1 in Consensus Mode!')
                         job1.RUN()
                 if options =='2':
                     job1.RUN()
@@ -1119,12 +1134,26 @@ while final_choice <5:
                     print("Round 1 specified, but you haven't chosen to prepare the directory tree or submit the jobs. For now the program will just exit.")
                     final_choice=5
             elif choose_round=='2':
-                options=input(note2_consensus+"\n")
+                if args.command_line_mode==False:
+                    options=input(note2_consensus+"\n")
+
+                else:
+                    if args.make_directories == True:
+                        print ('Preparing directory structure for CONSENSUS MODE.')
+                        options = '1'
+                    elif args.submit == True: 
+                        print('Submitting ROUND 2 batch jobs in CONSENSUS MODE!!')
+                        options = '2'
+                    else:
+                        options = '3'
                 if options=="1":
-                    print("\nPREPPING for CONSENSUS.\n")
+                    print("\nPrepping Directories Round 2 for CONSENSUS MODE.\n")
                     job2.PREP_CONSENSUS()
+                    if args.command_line_mode==True and args.submit == True :
+                        job2.RUN_CONSENSUS()
+
                 elif options=="2":
-                    print("\nBATCH submission for CONSENSUS.\n")
+                    print("\nBATCH submission in CONSENSUS MODE.\n")
                     job2.RUN_CONSENSUS()
                 elif options=="3":
                     print("\nPOST-PROCESSING OUTPUTS!\n")

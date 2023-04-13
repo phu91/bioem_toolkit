@@ -71,68 +71,6 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
         file2.close()
     # os.remove("tmp_prob")
 
-<<<<<<< HEAD
-def making_orientations(r1_probs,workdir_round2):
-    #why is this 125?
-    grid=125
-    r1_probs_read = open(r1_probs,"r+")
-    tmp_file = open("tmp_orient","w+")
-    lines = r1_probs_read.readlines()
-    for line in range(3,len(lines)):
-        tmp_file.write(lines[line])
-    tmp_file.close()
-    r1_probs_read.close()
-    r1_probs_result = pd.read_csv("tmp_orient",delim_whitespace='True',header=None)
-    r1_probs_result = r1_probs_result.iloc[:,[0,1,2,3,4]]
-    label_list=["particle","q1","q2","q3","q4"]
-    r1_probs_result.columns=label_list
-    # os.remove("tmp_orient")
-    particle_list = r1_probs_result['particle'].drop_duplicates().values
-    # print(particle_list.values[0])
-    for particle_index in range(len(particle_list)):
-        # print(particle_index)
-        particle_now = particle_list[particle_index]
-        particle_angle = r1_probs_result.loc[(r1_probs_result["particle"] == particle_now)]
-        total_orientation = len(particle_angle)
-        nTotal_orientation = grid * total_orientation
-        with open("/dev/shm/tmp_angle_%s" % (particle_now), "w+") as tmp1:
-            for ind, orient in particle_angle.iterrows():
-                tmp1.write(
-                    "%12.6f%12.6f%12.6f%12.6f\n"
-                    % (orient["q1"], orient["q2"], orient["q3"], orient["q4"])
-                )
-        tmp1.close()
-        print("Run MQ on particle %s" % (particle_now))
-        multiple_quat_exe_cmd ="./bioem_toolkit/library/multiple_Quat/multiply_quat.exe /dev/shm/tmp_angle_%s /dev/shm/sampling_angle_%s %s"%(particle_now,particle_now,grid)
-        subprocess.run(multiple_quat_exe_cmd, shell=True)
-        with open("/dev/shm/ANG_for-R2-%s" % (particle_now), "w+") as tmp1:
-            tmp1.write(str(nTotal_orientation) + "\n")
-            for f in ["/dev/shm/sampling_angle_%s" % (particle_now)]:
-                with open(f, "r+") as tmp2:
-                    lines = tmp2.readlines()
-                    for line in lines:
-                        string = line.split()
-                        # print(string)
-                        tmp1.write(
-                            "%12.6f%12.6f%12.6f%12.6f\n"
-                            % (
-                                float(string[0]),
-                                float(string[1]),
-                                float(string[2]),
-                                float(string[3]),
-                            )
-                        )
-                    # shutil.copy2(tmp2,tmp1)
-                tmp2.close()
-        tmp1.close()
-        shutil.copy(
-            "/dev/shm/ANG_for-R2-%s" % (particle_now),
-            os.path.join(workdir_round2, "orientations"),
-        )
-        os.remove("/dev/shm/tmp_angle_%s" % (particle_now))
-        os.remove("/dev/shm/sampling_angle_%s" % (particle_now))
-        os.remove("/dev/shm/ANG_for-R2-%s" % (particle_now))
-        # return particle_now
 def making_orientations_submission(libraryPath,r1_foo,model_now,group_now,workdir_round2):
     ray_template_path = os.path.join(libraryPath,"slurm-RAY-template.sh")
     makeOri_template_path = os.path.join(libraryPath,"makeOri-template.py")
@@ -156,70 +94,6 @@ def making_orientations_submission(libraryPath,r1_foo,model_now,group_now,workdi
         with open(makeOri_workdir,"w+") as outfile:
             outfile.write(makeOri_file)
 
-# def making_orientations(r1_foo, workdir_round2):
-#     grid = 125
-#     r1_foo_read = open(r1_foo, "r+")
-#     tmp_file = open("tmp_orient", "w+")
-#     lines = r1_foo_read.readlines()
-#     for line in range(3, len(lines)):
-#         tmp_file.write(lines[line])
-#     tmp_file.close()
-#     r1_foo_read.close()
-#     r1_foo_result = pd.read_csv("tmp_orient", delim_whitespace="True", header=None)
-#     r1_foo_result = r1_foo_result.iloc[:, [0, 1, 2, 3, 4]]
-#     label_list = ["particle", "q1", "q2", "q3", "q4"]
-#     r1_foo_result.columns = label_list
-#     # os.remove("tmp_orient")
-#     particle_list = r1_foo_result["particle"].drop_duplicates().values
-#     # print(particle_list.values[0])
-#     for particle_index in range(len(particle_list)):
-#         # print(particle_index)
-#         particle_now = particle_list[particle_index]
-#         particle_angle = r1_foo_result.loc[(r1_foo_result["particle"] == particle_now)]
-#         total_orientation = len(particle_angle)
-#         nTotal_orientation = grid * total_orientation
-#         with open("tmp_angle_%s" % (particle_now), "w+") as tmp1:
-#             for ind, orient in particle_angle.iterrows():
-#                 tmp1.write(
-#                     "%12.6f%12.6f%12.6f%12.6f\n"
-#                     % (orient["q1"], orient["q2"], orient["q3"], orient["q4"])
-#                 )
-#         tmp1.close()
-#         print("Run MQ on particle %s" % (particle_now))
-#         multiple_quat_exe_cmd = (
-#             "/mnt/home/ptang/ceph/6-ABC-Transporter/1-PROCESSING/trial2/library/multiple_Quat/multiply_quat.exe tmp_angle_%s sampling_angle_%s %s"
-#             % (particle_now, particle_now, grid)
-#         )
-#         subprocess.run(multiple_quat_exe_cmd, shell=True)
-#         with open("ANG_for-R2-%s" % (particle_now), "w+") as tmp1:
-#             tmp1.write(str(nTotal_orientation) + "\n")
-#             for f in ["sampling_angle_%s" % (particle_now)]:
-#                 with open(f, "r+") as tmp2:
-#                     lines = tmp2.readlines()
-#                     for line in lines:
-#                         string = line.split()
-#                         # print(string)
-#                         tmp1.write(
-#                             "%12.6f%12.6f%12.6f%12.6f\n"
-#                             % (
-#                                 float(string[0]),
-#                                 float(string[1]),
-#                                 float(string[2]),
-#                                 float(string[3]),
-#                             )
-#                         )
-#                     # shutil.copy2(tmp2,tmp1)
-#                 tmp2.close()
-#         tmp1.close()
-#         shutil.copy(
-#             "ANG_for-R2-%s" % (particle_now),
-#             os.path.join(workdir_round2, "orientations"),
-#         )
-#         os.remove("tmp_angle_%s" % (particle_now))
-#         os.remove("sampling_angle_%s" % (particle_now))
-#         os.remove("ANG_for-R2-%s" % (particle_now))
-#         # return particle_now
->>>>>>> phu
 
 
 def validate_zipfile(path_to_zipfile):

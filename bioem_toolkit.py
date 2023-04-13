@@ -1244,11 +1244,11 @@ CONSENSUS MODE                                           |
 ----------------------------------------------------------
 CHOOSE THE MODE:
 
-	1. Prepping and Run BioEM normally
-	2. Prepping and Run BioEM with one model to be chosen as
-	   a CONSENSUS model
-	3. Analysis suit
-	4. EXIT NOW
+    1. Prepping and Run BioEM normally
+    2. Prepping and Run BioEM with one model to be chosen as
+       a CONSENSUS model
+    3. Analysis suit
+    4. EXIT NOW
 ----------------------------------------------------------
 ##########################################################
 """
@@ -1259,9 +1259,9 @@ THIS PROGRAM IS FOR RUNNING ROUND 1                   |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation directories
-	2. Submit JOBs
-	3. Exit
+    1. Preparation directories
+    2. Submit JOBs
+    3. Exit
 -------------------------------------------------------
 #######################################################
 """
@@ -1271,9 +1271,9 @@ THIS PROGRAM IS FOR ROUND 1 IN CONSENSUS MODE         |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation directories
-	2. Submit JOBs
-	3. Exit
+    1. Preparation directories
+    2. Submit JOBs
+    3. Exit
 -------------------------------------------------------
 #######################################################
 """
@@ -1284,11 +1284,11 @@ THIS PROGRAM IS FOR ROUND 2 IN CONSENSUS MODE         |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation directories
-	2. Submit JOBs
-	3. Post-process output
-	4. Cleanup PARAMETERS
-	5. Exit
+    1. Preparation directories
+    2. Submit JOBs
+    3. Post-process output
+    4. Cleanup PARAMETERS
+    5. Exit
 -------------------------------------------------------
 #######################################################
 """
@@ -1300,11 +1300,11 @@ IN CONSENSUS MODE                                     |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation directories
-	2. Submit JOBs
-	3. Post-process output
-	4. Cleanup PARAMETERS
-	5. Exit
+    1. Preparation directories
+    2. Submit JOBs
+    3. Post-process output
+    4. Cleanup PARAMETERS
+    5. Exit
 -------------------------------------------------------
 #######################################################
 """
@@ -1315,11 +1315,11 @@ THIS PROGRAM IS FOR ROUND 2                           |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation directories
-	2. Submit JOBs
-	3. Post-process output
-	4. Cleanup PARAMETERS
-	5. Exit
+    1. Preparation directories
+    2. Submit JOBs
+    3. Post-process output
+    4. Cleanup PARAMETERS
+    5. Exit
 -------------------------------------------------------
 #######################################################
 """
@@ -1330,11 +1330,11 @@ THIS PROGRAM IS FOR ROUND 2 IN CONSENSUS MODE         |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation directories
-	2. Submit JOBs
-	3. Post-process output
-	4. Cleanup PARAMETERS
-	5. Exit
+    1. Preparation directories
+    2. Submit JOBs
+    3. Post-process output
+    4. Cleanup PARAMETERS
+    5. Exit
 -------------------------------------------------------
 #######################################################
 """
@@ -1345,11 +1345,11 @@ RUNNING cryoBIFE toolkits					          |
 -------------------------------------------------------
 Select the number to run:
 
-	1. Preparation INPUTs
-	2. Make LOG matrix
-	3. Run cryo-BIFE
-	4. Cleanup PARAMETERS
-	5. Exit
+    1. Preparation INPUTs
+    2. Make LOG matrix
+    3. Run cryo-BIFE
+    4. Cleanup PARAMETERS
+    5. Exit
 -------------------------------------------------------
 #######################################################
 """

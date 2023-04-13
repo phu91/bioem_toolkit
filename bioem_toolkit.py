@@ -349,31 +349,12 @@ class NORMAL_MODE_ROUND2:
                     )
 
                     if os.path.basename(group_param_path) == "tmp_files":
-                    #     shutil.copy(
-                    #         param_v + "/Param_BioEM_ABC_template", group_param_path
-                    #     )
-                    #     param_bio_template_path = os.path.join(
-                    #         group_param_path, "Param_BioEM_ABC_template"
-                    #     )
-                    #     shutil.copy(
-                    #         r1_group_path + "/Output_Probabilities",
-                    #         group_param_path + "/Output_Probabilities-R1",
-                    #     )
-                    #     Out_Prob_R1_path = os.path.join(
-                    #         group_param_path, "Output_Probabilities-R1"
-                    #     )
-
-                    #     CLEAN_P1_PROB = clean_R1_Probability
-                    #     CLEAN_P1_PROB(
-                    #         r2_group_path, Out_Prob_R1_path, param_bio_template_path
-                    #     )
-                    #     print("========== Done with PARAMETER FILES for %s" % (MODEL))
 
                         shutil.copy(
                             r1_group_path + "/angle_output_probabilities.txt",
                             group_param_path + "/PROB_ANGLE_R1.txt",
                         )
-                        CLEAN_P1_PROB = making_orientations
+                        CLEAN_P1_PROB = making_orientations_submission
                         CLEAN_P1_PROB(
                             group_param_path + "/PROB_ANGLE_R1.txt", r2_group_path
                         )
@@ -382,61 +363,6 @@ class NORMAL_MODE_ROUND2:
                         # subprocess.run(ray_cmd,shell=True)
                         print("========== Done with ORIENTATION FILES for %s" % (MODEL))
 
-
-                    # elif os.path.basename(group_param_path) == "tasks":
-                    #     # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
-                    #     shutil.copy(
-                    #         param_v + "/launch-one-template.sh", group_param_path
-                    #     )
-                    #     launch_one_path = os.path.join(
-                    #         group_param_path, "launch-one-template.sh"
-                    #     )
-                    #     # print(launch_one_path)
-                    #     with open(launch_one_path, "r+") as launchIn:
-                    #         with open(
-                    #             group_param_path + "/launch-one.sh", "w+"
-                    #         ) as launchOut:
-                    #             lines = launchIn.readlines()
-                    #             for line in lines:
-                    #                 line = line.split()
-                    #                 # print(line)
-                    #                 if len(line) >= 2:
-                    #                     if line[1] == "SLURM_JOB_NAME=WhatModel-R2":
-                    #                         line[1] = "SLURM_JOB_NAME=%s-R2" % (MODEL)
-                    #                     elif line[1] == "WhereRound2=WhereRound2":
-                    #                         line[1] = "WhereRound2=%s" % (round2_path)
-                    #                     elif line[1] == "WhereParticles=WhereParticles":
-                    #                         line[1] = "WhereParticles=%s" % (
-                    #                             self.particle_path
-                    #                         )
-                    #                     elif line[1] == "WhereModel=WhereModel":
-                    #                         line[1] = "WhereModel=%s" % (
-                    #                             os.path.abspath(self.model_path)
-                    #                         )
-                    #                 # print(*line)
-                    #                 string = "  ".join(map(str, line))
-                    #                 launchOut.write(string + "\n")
-                    #             launchOut.close()
-                    #     launchIn.close()
-                    #     os.chmod(group_param_path + "/launch-one.sh", stat.S_IRWXU)
-                    #     # os.remove(launch_one_path)
-
-                    #     task_path = os.path.join(
-                    #         group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
-                    #     )
-                    #     particle_count = GROUP["nframe"]
-                    #     with open(task_path, "w+") as task:
-                    #         for i in range(particle_count):
-                    #             # print(i)
-                    #             launch_one_command = (
-                    #                 "./launch-one.sh %s %s %s  &>> out.log"
-                    #                 % (i, GROUP["group"], MODEL)
-                    #             )
-                    #             task.write(launch_one_command + "\n")
-                    #     task.close()
-                    #     print(
-                    #         "========== Done with creating Task File for %s" % (MODEL)
-                    #     )
 
     def RUN(self):
         try:
@@ -822,7 +748,7 @@ class CONSENSUS_MODE_ROUND_2:
                         consensus_round1_group_path + "/angle_output_probabilities.txt",
                         group_param_path + "/PROB_ANGLE_R1.txt",
                     )
-                    CLEAN_P1_PROB = making_orientations
+                    CLEAN_P1_PROB = making_orientations_submission
                     CLEAN_P1_PROB(
                         group_param_path + "/PROB_ANGLE_R1.txt",
                         consensus_round2_group_path,

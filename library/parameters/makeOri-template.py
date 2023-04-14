@@ -37,7 +37,7 @@ def quat_calculation(particle_now):
             tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(orient['q1'],orient['q2'],orient['q3'],orient['q4']))
     # print("Run MQ on particle %s"%(particle_now))
     tmp_file_2_path = os.path.join(trash_collector_path,"sampling_angle_%s"%(particle_now))
-    multiple_quat_exe_cmd ="library/multiple_Quat/multiply_quat.exe %s %s %s"%(tmp_file_path,tmp_file_2_path,grid)
+    multiple_quat_exe_cmd ="../../../../bioem_toolkit/library/multiple_Quat/multiply_quat.exe %s %s %s"%(tmp_file_path,tmp_file_2_path,grid)
     subprocess.run(multiple_quat_exe_cmd,shell=True)
     ANG_tmp_file_path = os.path.join(trash_collector_path,"ANG_for-R2-%s"%(particle_now))
     with open(ANG_tmp_file_path,'w+') as tmp1:
@@ -57,10 +57,10 @@ def quat_calculation(particle_now):
 
 # @timer_func
 def making_orientations():
-    global r1_foo_result, orientation_path, MODEL,GROUP
+    global r1_prob_result, orientation_path, MODEL,GROUP
     MODEL="WhatMODEL"
     GROUP="WhatGROUP"
-    r1_prob="WhereProb"
+    r1_prob="WherePROB"
     workdir_round2="WhereWORKDIR2"
     orientation_path = os.path.join(workdir_round2,"orientations")
     trash_collector_path = "/dev/shm"
@@ -83,17 +83,10 @@ def making_orientations():
     ids = [quat_calculation.remote(x) for x in particle_list]
     ray.get(ids)
 
-    # ncpu = multiprocessing.cpu_count()
-    # print("There are %s CPUs"%(ncpu))
-    # with WorkerPool() as p:
-        # p.map(quat_calculation,zip(particle_list))
-        # p.close()
-        # p.join()
-
-# start = time()
-# r2_group_path="."
-# CLEAN_P1_FOO = making_orientations
-# CLEAN_P1_FOO("foo.txt",r2_group_path)
-# print("Duration: %s"%(time()-start))
+start = time()
+r2_group_path="."
+CLEAN_P1_PROB = making_orientations
+CLEAN_P1_PROB()
+print("Duration: %s"%(time()-start))
 
 

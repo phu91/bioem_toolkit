@@ -71,7 +71,8 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
         file2.close()
     # os.remove("tmp_prob")
 
-def making_orientations_submission(libraryPath,r1_foo,model_now,group_now,workdir_round2):
+def making_orientations_submission(libraryPath,r1_prob,model_now,group_now,workdir_round2):
+    workdir_round2 = os.path.abspath(workdir_round2)
     ray_template_path = os.path.join(libraryPath,"slurm-RAY-template.sh")
     makeOri_template_path = os.path.join(libraryPath,"makeOri-template.py")
     ray_making_path = os.path.join(libraryPath,"slurm-RAY-making.py")
@@ -82,15 +83,12 @@ def making_orientations_submission(libraryPath,r1_foo,model_now,group_now,workdi
     shutil.copy(ray_template_path,ray_workdir)
     shutil.copy(ray_making_path,workdir_round2)
     shutil.copy(makeOri_template_path,makeOri_workdir)
-    # print(libraryPath,r1_foo,model_now,group_now,workdir_round2)
     with open(makeOri_template_path, "r+") as file:
         makeOri_file = file.read()
-        # print(slurm_file_out_path)
-        makeOri_file = makeOri_file.replace("WhatMODEL",model_now)
-        makeOri_file = makeOri_file.replace("WhatGROUP",group_now )
-        makeOri_file = makeOri_file.replace("WhereFOO",r1_foo)
+        makeOri_file = makeOri_file.replace("WhatMODEL",os.path.basename(os.path.normpath(model_now)))
+        makeOri_file = makeOri_file.replace("WhatGROUP",os.path.basename(os.path.normpath(group_now )))
+        makeOri_file = makeOri_file.replace("WherePROB",os.path.abspath(r1_prob))
         makeOri_file = makeOri_file.replace("WhereWORKDIR2",workdir_round2)
-    # print("PROCESSED %s"(model_now))
         with open(makeOri_workdir,"w+") as outfile:
             outfile.write(makeOri_file)
 
@@ -334,6 +332,7 @@ class NORMAL_MODE_ROUND2:
                 r1_group_path = os.path.join(round1_path, GROUP["group"])
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 os.makedirs(r2_group_path, exist_ok="True")
+                print(r2_group_path)
                 subdir_list = [
                     "/parameters",
                     "/orientations",
@@ -354,13 +353,17 @@ class NORMAL_MODE_ROUND2:
                             r1_group_path + "/angle_output_probabilities.txt",
                             group_param_path + "/PROB_ANGLE_R1.txt",
                         )
-                        CLEAN_P1_PROB = making_orientations_submission
-                        CLEAN_P1_PROB(
-                            group_param_path + "/PROB_ANGLE_R1.txt", r2_group_path
-                        )
+                        r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
+                        making_orientations_submission (libraryPath = param_v, r1_prob = r1_prob, model_now = a_model_path , group_now = r2_group_path, workdir_round2 = r2_group_path )
+                        ray_template_path = os.path.join(param_v, "slurm-RAY-template.sh")
+                        current_directory = os.getcwd()
+                        os.chdir(r2_group_path)
+                        partition = 'ccb'
 
-                        # ray_cmd = 'python %s --exp-name %s-%s --command "python %s" --num-nodes 1 --partition %s'%(ray_template_path,MODEL,GROUP,makeOri_path,partition.lowercase())
-                        # subprocess.run(ray_cmd,shell=True)
+                        a_group_path = os.path.abspath(r2_group_path)
+                        ray_cmd = 'python %s --exp-name %s-%s --command "python %s" --num-nodes 1 --partition %s --load-env %s '%('slurm-RAY-making.py',MODEL,GROUP.group,'./makeOri.py',partition, '"source /mnt/home/mastore/.bashrc"')
+                        subprocess.run(ray_cmd,shell=True)
+                        os.chdir(current_directory)
                         print("========== Done with ORIENTATION FILES for %s" % (MODEL))
 
 

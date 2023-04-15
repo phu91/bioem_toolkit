@@ -32,9 +32,10 @@ void main(int argc, char *argv[] ) {
 	
 	base=fopen(argv[1],"r");
         out=fopen(argv[2],"w");
-	gridpoints=atoi(argv[3]);
-	sprintf(gridFilename,"./bioem_toolkit/library/multiple_Quat/smallGrid_%d",gridpoints);
-	grid=fopen(gridFilename,"r");
+	//gridpoints=atoi(argv[3]);
+        grid = fopen(argv[3],"r");
+	//sprintf(gridFilename,"./bioem_toolkit/library/multiple_Quat/smallGrid_%d",gridpoints);
+	//grid=fopen(gridFilename,"r");
 
 
 	int bufferLength = 255;

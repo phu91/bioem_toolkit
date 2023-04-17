@@ -15,7 +15,8 @@ export WhereParticles=WhereParticles
 export WhereModel=WhereModel
 export WhereOutput=WhereOutput
 export WhereProject=WhereProject
+export WhereRound1_CONSENSUS_Results=WhereRound1_CONSENSUS_Results
 
 #cd $WhereProject
 
-mpirun --bind-to none -np 1 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM  --Modelfile ${WhereModel}/${mod}  --Particlesfile ${WhereParticles}/${gname}/particle_${pnum}.mrc --ReadMRC --ReadOrientation ../orientations/ANG_for-R2-${pnum} --Inputfile ../parameters/Parm_${pnum} --OutputFile ../outputs/out-$pnum
+mpirun --bind-to none -np 1 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM  --Modelfile ${WhereModel}/${mod}  --Particlesfile ${WhereParticles}/${gname}/particle_${pnum}.mrc --ReadMRC --ReadOrientation $WhereRound1_CONSENSUS_Results/orientations/ANG_for-R2-${pnum} --Inputfile $WhereRound1_CONSENSUS_Results/parameters/Parm_${pnum} --OutputFile ../outputs/out-$pnum

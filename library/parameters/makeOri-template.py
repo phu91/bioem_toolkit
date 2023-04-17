@@ -45,20 +45,21 @@ def quat_calculation(particle_now):
     multiply_quat_exe_location = os.path.abspath('./bioem_toolkit/library/multiple_Quat/multiply_quat.exe')
     multiple_quat_exe_cmd ="%s %s %s %s"%(multiply_quat_exe_location,os.path.abspath(tmp_file_path),os.path.abspath(tmp_file_2_path),grid_file)
     os.chdir(current_directory)
-    print(os.getcwd())
-    print(multiple_quat_exe_cmd)
     subprocess.run(multiple_quat_exe_cmd,shell=True)
     ANG_tmp_file_path = os.path.join(trash_collector_path,"ANG_for-R2-%s"%(particle_now))
     with open(ANG_tmp_file_path,'w+') as tmp1:
         tmp1.write(str(nTotal_orientation)+"\n")
+    #Its faster to just dump the contents of a file rather than just write it line by line.
+    concatenate_command = "cat " +  str(tmp_file_2_path) + " >> " + str(ANG_tmp_file_path)
+    subprocess.run(concatenate_command, shell=True)
         # for f in tmp_file_2_path:
-        with open(tmp_file_2_path,'r+') as tmp2:
-            lines=tmp2.readlines()
-            for line in lines:
-                string=line.split()
-                # print(string)
-                tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
-            # shutil.copy2(tmp2,tmp1)
+      #  with open(tmp_file_2_path,'r+') as tmp2:
+      #      lines=tmp2.readlines()
+      #      for line in lines:
+      #          string=line.split()
+      #          # print(string)
+      #          tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
+      #      # shutil.copy2(tmp2,tmp1)
     #print(ANG_tmp_file_path)
     #print(orientation_path)
     shutil.copy(ANG_tmp_file_path,orientation_path)
@@ -73,7 +74,7 @@ def making_orientations():
     GROUP="WhatGROUP"
     r1_prob="WherePROB"
     workdir_round2="WhereWORKDIR2"
-    orientation_path = os.path.join(workdir_round2,"orientations")
+    orientation_path = os.path.join(workdir_round2,GROUP,"orientations")
     trash_collector_path = "/dev/shm/"
     os.makedirs(orientation_path,exist_ok=True)
     os.chmod(orientation_path,stat.S_IRWXU)

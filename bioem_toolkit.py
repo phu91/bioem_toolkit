@@ -6,10 +6,12 @@ import pandas as pd
 import mrcfile as mrc
 import numpy as np
 
-# adding library to the system path
+# adding library to the system path. Should use this.
 sys.path.insert(0, 'library/parameters')
-# from multiprocessing import Process
 
+#TODO refactor code so that consensus is just a type of job. 
+# TODO submit make orientation for consensus job. 
+# TODO make grid multiplication a part of round 1. 
 
 def timer_func(func):
     # This function shows the execution time of
@@ -32,7 +34,7 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
         tmp_file.write(lines[line])
     tmp_file.close()
     r1_read.close()
-    r1_result = pd.read_csv("tmp_prob", delim_whitespace="True", header=None)
+    r1_result = pd.read_csv("tmp_prob", delim_whitespace="True", header=None,dtype=str)
     r1_result = r1_result.iloc[:, [1, 4, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]]
     label_list = [
         "particle",
@@ -72,7 +74,9 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
     # os.remove("tmp_prob")
 
 def making_orientations_submission(libraryPath,r1_prob,model_now,group_now,workdir_round2):
+
     workdir_round2 = os.path.abspath(workdir_round2)
+    #group_now_path = os.path.abspath()
     ray_template_path = os.path.join(libraryPath,"slurm-RAY-template.sh")
     makeOri_template_path = os.path.join(libraryPath,"makeOri-template.py")
     ray_making_path = os.path.join(libraryPath,"slurm-RAY-making.py")
@@ -220,7 +224,7 @@ class NORMAL_MODE_ROUND1:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         # print(GROUPS)
         # Strips the newline character
@@ -272,7 +276,7 @@ class NORMAL_MODE_ROUND1:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -314,7 +318,7 @@ class NORMAL_MODE_ROUND2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         # print(GROUPS)
         # Strips the newline character
@@ -373,25 +377,6 @@ class NORMAL_MODE_ROUND2:
                             r1_group_path + "/angle_output_probabilities.txt",
                             group_param_path + "/PROB_ANGLE_R1.txt",
                         )
-#
-#                        param_bio_template_path = os.path.abspath(os.path.join(
-#                            group_param_path, "Param_BioEM_ABC_template"
-#                        ))
-#
-#                        shutil.copy(
-#                            r1_group_path + "/Output_Probabilities",
-#                            group_param_path + "/Output_Probabilities-R1",
-#                        )
-#
-#                        Out_Prob_R1_path = os.path.join(
-#                            group_param_path, "Output_Probabilities-R1"
-#                        )
-#
-#
-#                        print(os.getcwd())
-#                        clean_R1_Probability( r2_group_path, Out_Prob_R1_path,
-#                            param_bio_template_path,
-#                        )
 
                         making_orientations_submission (libraryPath = param_v, r1_prob = r1_prob, model_now = a_model_path , group_now = r2_group_path, workdir_round2 = r2_group_path )
                         ray_template_path = os.path.join(param_v, "slurm-RAY-template.sh")
@@ -447,7 +432,7 @@ class NORMAL_MODE_ROUND2:
                       task_path = os.path.join(
                           group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
                       )
-                      particle_count = GROUP["nframe"]
+                      particle_count = int(GROUP["nframe"])
                       with open(task_path, "w+") as task:
                           for i in range(particle_count):
                               # print(i)
@@ -476,7 +461,7 @@ class NORMAL_MODE_ROUND2:
                 self.group_list,
                 names=["particle_file", "group", "nframe"],
                 delim_whitespace="True",
-                comment="#",
+                comment="#",dtype=str
             )
             for MODEL in MODELS:
                 MODEL = MODEL.strip()
@@ -518,7 +503,7 @@ class NORMAL_MODE_ROUND2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -538,7 +523,7 @@ class NORMAL_MODE_ROUND2:
                     MODEL,
                     GROUP["group"],
                     path_to_your_mess,
-                    GROUP["nframe"],
+                    int(GROUP["nframe"]),
                 )
 
     def CLEAN_PARAMS(self):
@@ -551,7 +536,7 @@ class NORMAL_MODE_ROUND2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -565,9 +550,8 @@ class NORMAL_MODE_ROUND2:
             for ind, GROUP in GROUPS.iterrows():
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 clean_params(
-                    delete_choice, MODEL, GROUP["group"], r2_group_path, GROUP["nframe"]
+                    delete_choice, MODEL, GROUP["group"], r2_group_path, int(GROUP["nframe"])
                 )
-
 
 #################################### CONSENSUS CLASSES
 class CONSENSUS_MODE_ROUND_1:
@@ -586,7 +570,7 @@ class CONSENSUS_MODE_ROUND_1:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str,
         )
         if args.command_line_mode==False:
             consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
@@ -602,7 +586,7 @@ class CONSENSUS_MODE_ROUND_1:
 
         for ind, GROUP in GROUPS.iterrows():
             print('making run file')
-            r1_group_path =os.path.join(round1_path,GROUP['group'])
+            r1_group_path =os.path.join(round1_path,str(GROUP['group']))
             os.makedirs(r1_group_path,exist_ok='True')
             shutil.copy(os.path.join(mp_v,MODEL),consensus_MODEL_path)
             shutil.copy(param_v+"/Param_BioEM_ABC_template",round1_path+"/Param_BioEM_ABC")
@@ -630,7 +614,7 @@ class CONSENSUS_MODE_ROUND_1:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         print(GROUPS)
         if args.command_line_mode==False:
@@ -671,7 +655,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         #This is here because we did consensus in round 1 but round 2 still looks at all the models we're interested in.
         consensus_MODEL_name = input(
@@ -749,6 +733,13 @@ class CONSENSUS_MODE_ROUND_2:
                                             )
                                         elif line[1] == "WhereOutput=WhereOutput":
                                             line[1] = "WhereOutput=%s" % (round2_path)
+                                        elif line[1] == "WhereRound1_CONSENSUS_Results=WhereRound1_CONSENSUS_Results":
+                                            # this is a place holder, beacuse we need to run the make ori script on consensus round 2 to produce the finer grid. 
+                                            # really we should figure out how to make this a variable. 
+                                            consensus_round2_orientations_processed =(os.path.abspath(os.path.join(consensus_round1_group_path,'../../round2/')))
+                                            consensus_round2_orientations_processed = consensus_round2_orientations_processed + '/$2'
+                                            
+                                            line[1] = "WhereRound1_CONSENSUS_Results=%s" % (consensus_round2_orientations_processed)
                                             # print(round2_path)
                                     # print(*line)
                                     string = "  ".join(map(str, line))
@@ -761,7 +752,7 @@ class CONSENSUS_MODE_ROUND_2:
                         task_path = os.path.join(
                             group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
                         )
-                        particle_count = GROUP["nframe"]
+                        particle_count = int(GROUP["nframe"])
                         with open(task_path, "w+") as task:
                             for i in range(particle_count):
                                 # print(i)
@@ -782,7 +773,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         if args.command_line_mode == False:
             consensus_MODEL_name = input(
@@ -818,6 +809,7 @@ class CONSENSUS_MODE_ROUND_2:
                 os.makedirs(
                     consensus_round2_group_path + subdir_list[sub_dir], exist_ok="True"
                 )
+
                 group_param_path = os.path.join(
                     consensus_round2_group_path + subdir_list[sub_dir]
                 )
@@ -849,11 +841,16 @@ class CONSENSUS_MODE_ROUND_2:
                         consensus_round1_group_path + "/angle_output_probabilities.txt",
                         group_param_path + "/PROB_ANGLE_R1.txt",
                     )
-                    CLEAN_P1_PROB = making_orientations_submission
-                    CLEAN_P1_PROB(
-                        group_param_path + "/PROB_ANGLE_R1.txt",
-                        consensus_round2_group_path,
-                    )
+                    r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
+                    a_model_path = os.path.join(op_v, consensus_MODEL_name)
+                    r2_group_path = a_model_path + '/round2'
+                    print(consensus_round2_group_path)
+                    making_orientations_submission (libraryPath = param_v, r1_prob = r1_prob, model_now = a_model_path , group_now = consensus_round2_group_path, workdir_round2 = r2_group_path )
+                    #CLEAN_P1_PROB = making_orientations_submission
+                    #CLEAN_P1_PROB(
+                    #    group_param_path + "/PROB_ANGLE_R1.txt",
+                    #    consensus_round2_group_path,
+                    #)
                     print(
                         "========== Done with ORIENTATION FILES for %s"
                         % (consensus_MODEL_name)
@@ -895,6 +892,11 @@ class CONSENSUS_MODE_ROUND_2:
                                         line[1] = "WhereModel=%s" % (
                                             os.path.abspath(self.model_path)
                                         )
+                                    elif line[1] == "WhereRound1_CONENSUS_Results=WhereRound1_CONENSUS_Results":
+                                        print(os.path.abspath(group_param_path))
+                                        line[1] = "WhereRound1_CONENSUS_Results=%s" % (
+                                            os.path.abspath(group_param_path)
+                                        )
                                 # print(*line)
                                 string = "  ".join(map(str, line))
                                 launchOut.write(string + "\n")
@@ -906,7 +908,7 @@ class CONSENSUS_MODE_ROUND_2:
                         group_param_path,
                         "task_%s_%s" % (consensus_MODEL_name, GROUP["group"]),
                     )
-                    particle_count = GROUP["nframe"]
+                    particle_count = int(GROUP["nframe"])
                     with open(task_path, "w+") as task:
                         for i in range(particle_count):
                             # print(i)
@@ -942,7 +944,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -958,13 +960,16 @@ class CONSENSUS_MODE_ROUND_2:
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 task_path = os.path.join(r2_group_path, "tasks")
                 task_file_name = "task_%s_%s" % (MODEL, GROUP["group"])
+                current_directory = os.getcwd()
                 os.chdir(task_path)
+
                 sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
                     MODEL,
                     task_file_name,
                 )
                 # print(sbatch_cmd)
                 subprocess.run(sbatch_cmd, shell=True)
+                os.chdir(current_directory)
 
     def RUN_CONSENSUS(self):
         try:
@@ -989,7 +994,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         round2_path = os.path.join(consensus_MODEL_path,"round2")
         GROUP=None
@@ -1014,7 +1019,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -1031,7 +1036,7 @@ class CONSENSUS_MODE_ROUND_2:
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 path_to_your_mess = os.path.join(r2_group_path, "outputs")
                 process_output_round2(
-                    MODEL, GROUP["group"], path_to_your_mess, GROUP["nframe"]
+                    MODEL, GROUP["group"], path_to_your_mess, int(GROUP["nframe"])
                 )
 
     def CLEAN_OUTPUT_CONSENSUS(self):
@@ -1041,7 +1046,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         round2_path = os.path.join(consensus_MODEL_path, "round2")
         GROUP = None
@@ -1050,7 +1055,7 @@ class CONSENSUS_MODE_ROUND_2:
             r2_group_path = os.path.join(round2_path, GROUP["group"])
             path_to_your_mess = os.path.join(r2_group_path, "outputs")
             process_output_round2(
-                consensus_MODEL_name, GROUP["group"], path_to_your_mess, GROUP["nframe"]
+                consensus_MODEL_name, GROUP["group"], path_to_your_mess, int(GROUP["nframe"])
             )
 
     def CLEAN_PARAMS(self):
@@ -1063,7 +1068,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -1077,7 +1082,7 @@ class CONSENSUS_MODE_ROUND_2:
             for ind, GROUP in GROUPS.iterrows():
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 clean_params(
-                    delete_choice, MODEL, GROUP["group"], r2_group_path, GROUP["nframe"]
+                    delete_choice, MODEL, GROUP["group"], r2_group_path, int(GROUP["nframe"])
                 )
 
 
@@ -1102,7 +1107,7 @@ class ANALYSIS_SUIT:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-            comment="#",
+            comment="#",dtype=str
         )
         matrix_model = pd.DataFrame(dtype=float)
         for MODEL in MODELS:
@@ -1138,7 +1143,7 @@ class ANALYSIS_SUIT:
             "Please provide the path to your CV profile (etc. MODEL CV_1 ... CV_n)\nThe first line will be read as headers\n"
         )
         df_cv_profile = pd.read_csv(
-            cv_profile_path, header=0, delim_whitespace=True, comment="#"
+            cv_profile_path, header=0, delim_whitespace=True, comment="#",dtype=str
         )
         cv_choice = input(
             "\n==========Your available Collective Variables (CV):\n%s\n\nPlease select the CV that you want to be SORTED:\n"
@@ -1161,7 +1166,7 @@ class ANALYSIS_SUIT:
         GROUPS = pd.read_csv(
             self.group_list,
             names=["particle_file", "group", "nframe"],
-            delim_whitespace="True",
+            delim_whitespace="True",dtype=str,
             comment="#",
         )
         matrix_model = pd.DataFrame()
@@ -1289,6 +1294,7 @@ Select the number to run:
 
 note2_nonconsensus = """
 #######################################################
+N CONSENSUS MODE
 THIS PROGRAM IS FOR ROUND 2 OF NON-CONSENSUS MODELS   |
 IN CONSENSUS MODE                                     |
 -------------------------------------------------------
@@ -1357,7 +1363,7 @@ if  __name__ == "__main__":
     parser.add_argument("-param", help="Absolute path to parameters files which this script uses. Usually stored in the github repo in 'bioem_toolkit/library'.")
     parser.add_argument("-pp", help="Absolute path of directory where particle .mrcs files are stored.")
     parser.add_argument("-op", dest="op", help="Directory where output will be stored.")
-    parser.add_argument("--consensus_model",'-c', dest='consensus_model', help="Name of consensus model. The model must be in the particles directory. Specify without the '.txt' extension. When this flag is used the script will run in consensus mode.")
+    parser.add_argument("--consensus-model",'-c', dest='consensus_model', help="Name of consensus model. The model must be in the particles directory. Specify without the '.txt' extension. When this flag is used the script will run in consensus mode.")
     parser.add_argument("-d",'--make-directories', dest='make_directories', action='store_true', help="When this flag is set, the script will set up the directory tree for you to run bioem. You will need to do this at least once.")
     parser.add_argument("-r ", "--round", dest="round_choice",  help="Specify which round of bioem to run. Round 1 or Round 2. 'both' is also an acceptable keyword. ", type=str)
     parser.add_argument("-cmd", "--command_line_mode", dest = "command_line_mode",  action="store_true",  help="Choose whether to run the code in interactive mode.")
@@ -1454,6 +1460,7 @@ while final_choice <5:
             elif options == "5":
                 final_choice = 5
                 print("Program exited.")
+
     elif mode_choice == "2":
         print("========== YOU CHOSE CONSENSUS MODE!!\n")
         job1 = CONSENSUS_MODE_ROUND_1(mp_v, ml_v, gl_v, param_v, particle_v, op_v)
@@ -1464,7 +1471,7 @@ while final_choice <5:
             if args.make_directories is not None:
                 create_consensus_directories = str(args.make_directories)
 
-        if create_consensus == "0":
+        if create_consensus_directories == "0":
             print("========== ONLY RUN ROUND 2 for non-CONSENSUS MODELS")
             options = input(note2_nonconsensus + "\n")
             if options == "1":

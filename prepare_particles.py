@@ -44,11 +44,10 @@ else:
 input_particles_location = str(os.path.abspath(args.stack))
 
 #validate mrcfile.
-if mrc.validate (input_particles_location):
-    print("MRC input file is valid.")
-else:
-    mrc.validate(input_particles_location)
-    raise ArgumentError ("MRC file is not valid. Please check how it was generated.")
+#if mrc.validate (input_particles_location):
+#    print("MRC input file is valid.")
+#else:
+#    raise ArgumentError ("MRC file is not valid. Please check how it was generated.")
 
 particles_output_location = str(os.path.abspath(args.output_directory))
 #make output directory 
@@ -64,7 +63,7 @@ with mrc.open (input_particles_location) as temp_mrc:
 #deciding which format the mrcfile is in. Remember there are a few types. 
 type_str = str(x.dtype)
 if type_dict [type_str] is None:
-    raise KeyError("The .mrcs file you have specified is in a format not recognised by this script. Make edits to line line 35 if to add the format if you know what you are doing. You'll need to check the documentation of the mrcfile python package. ")
+    raise KeyError("The .mrcs file you have specified is in a format not recognised by this script. Make edits to line 35 if to add the format if you know what you are doing. You'll need to check the documentation of the mrcfile python package. ")
 mrc_type_int = type_dict[type_str]
 
 
@@ -92,6 +91,7 @@ for i in range(len(write_stack_directories)):
     current_stack_location = (particles_output_location + '/' + str(write_stack_names[i]))
 
     mrcs_stack_out_file = mrc.new_mmap(particles_output_location + '/' + str(write_stack_names[i] ) ,shape=mrcs_stack_file_shape,overwrite=True, mrc_mode = mrc_type_int)
+    #mrcs_stack_out_file = mrc.new(particles_output_location + '/' + str(write_stack_names[i] ), overwrite=True)
 
     #will need to make this faster when we move to large particle datasets. Remeber, we need to write out each individual particle to an mrc file AND output each group as a stack of .mrcs files (even though this is redundant).
     for j in range(write_stack_lengths[i]):
@@ -100,11 +100,13 @@ for i in range(len(write_stack_directories)):
             current_image = (temp_mrc.data[running_particle_index])
             mrcs_stack_out_file.data[j] = current_image
             
-            single_mrc_out_file = mrc.new_mmap(particles_output_location + '/' + str(write_stack_directories[i]) + '/' + 'particle_' +str(running_particle_index) + '.mrc' , shape=single_mrc_file_shape,overwrite=True, mrc_mode = mrc_type_int)
-            single_mrc_out_file.data[0] = current_image
-            running_particle_index = running_particle_index + 1
-            print (j)
-            single_mrc_out_file.close()
+            #single_mrc_out_file = mrc.new(particles_output_location + '/' + str(write_stack_directories[i]) + '/' + 'particle_' +str(running_particle_index) + '.mrc' , overwrite=True, mrc_mode = mrc_type_int)
+            #single_mrc_out_file = mrc.new(particles_output_location + '/' + str(write_stack_directories[i]) + '/' + 'particle_' +str(running_particle_index) + '.mrc' , overwrite=True)
+            #single_mrc_out_file = mrc.new('/dev/shm' + '/' + 'particle_' +str(running_particle_index) + '.mrc' , overwrite=True)
+            #single_mrc_out_file.set_data ( current_image)
+            #running_particle_index = running_particle_index + 1
+            #print (j)
+            #single_mrc_out_file.close()
 #    
     #for i in range(num_slices):
     mrcs_stack_out_file.close()

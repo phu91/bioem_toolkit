@@ -9,7 +9,7 @@ import sys
 import time
 from pathlib import Path
 
-template_file = "slurm-RAY.sh"
+template_file = "WhereLaunchOne"
 JOB_NAME = "${JOB_NAME}"
 NUM_NODES = "${NUM_NODES}"
 NUM_GPUS_PER_NODE = "${NUM_GPUS_PER_NODE}"
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         f.write(text)
 
     # ===== Submit the job =====
-    print("Starting to submit job!")
+    # print("Starting to submit job!")
     subprocess.Popen(["sbatch", script_file])
     print(
         "Job submitted! Script file is at: <{}>. Log file is at: <{}>".format(

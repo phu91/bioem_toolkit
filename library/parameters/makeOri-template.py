@@ -17,20 +17,20 @@ print(
 )
 
 # def timer_func(func):
-# 		# This function shows the execution time of
-# 	# the function object passed
-# 	def wrap_func(*args, **kwargs):
-# 		t1 = time()
-# 		result = func(*args, **kwargs)
-# 		t2 = time()
-# 		print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')
-# 		return result
-# 	return wrap_func
+#         # This function shows the execution time of
+#     # the function object passed
+#     def wrap_func(*args, **kwargs):
+#         t1 = time()
+#         result = func(*args, **kwargs)
+#         t2 = time()
+#         print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')
+#         return result
+#     return wrap_func
 
 # @timer_func
 @ray.remote
 def quat_calculation(particle_now):
-    trash_collector_path = "/tmp"
+    trash_collector_path = "."
     grid = 125
     particle_angle = r1_foo_result.loc[(r1_foo_result["particle"] == particle_now)]
     total_orientation = len(particle_angle)
@@ -83,10 +83,10 @@ def quat_calculation(particle_now):
         ANG_tmp_file_path,
         os.path.join(orientation_path, "ANG_for-R2-%s" % (particle_now)),
     )
-    # print("Done %s" % (particle_now))
-    os.remove(tmp_file_path)
-    os.remove(tmp_file_2_path)
-    os.remove(ANG_tmp_file_path)
+    print(":::  %s" % (orientation_path))
+    # os.remove(tmp_file_path)
+    # os.remove(tmp_file_2_path)
+    # os.remove(ANG_tmp_file_path)
 
 
 # @timer_func

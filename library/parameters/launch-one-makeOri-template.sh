@@ -60,5 +60,7 @@ for ((i = 1; i <= worker_num; i++)); do
   sleep 5
 done
 
+source $HOME/envs/cluster_python/bin/activate
 # ===== Call your code below =====
+
 ${COMMAND_PLACEHOLDER}

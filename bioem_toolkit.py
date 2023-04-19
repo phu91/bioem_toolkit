@@ -36,8 +36,13 @@ def choosing_cluster():
         print("\n========== MULTIPLY_QUAT will be done on local machine")
         return None
 
+def particle_counter(group_name):
+    group_name_split = group_name.split("-")
+    start = int(group_name_split[0])
+    end = int(group_name_split[1])+1
+    return start,end
 
-def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
+def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
     r1_read = open(r1_output, "r+")
     tmp_file = open("tmp_prob", "w+")
     lines = r1_read.readlines()
@@ -64,10 +69,11 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
     ]
     r1_result.columns = label_list
     # print(r1_result.head(3))
+    start,end = particle_counter(group_now)
     for ind, particle in r1_result.iterrows():
         CTF_DEFOCUS_VALUE = particle["CTF_defocus"]
         with open(bioEM_template, "r+") as file1:
-            with open(working_dir + "/parameters/Parm_%s" % (ind), "w+") as file2:
+            with open(working_dir + "/parameters/Parm_%s" % ([i for i in range(start,end)]), "w+") as file2:
                 lines = file1.readlines()
                 # print(lines)
                 for line in lines:
@@ -180,7 +186,6 @@ def making_orientations_submission(
         subprocess.Popen(makeOri_cmd, shell=True)
         # time.sleep(1)
         os.chdir(curdir)
-
 
 def validate_zipfile(path_to_zipfile):
     try:
@@ -455,34 +460,38 @@ class NORMAL_MODE_ROUND2:
                         )
 
                         clean_R1_Probability(
-                        r2_group_path, Out_Prob_R1_path, param_bio_template_path
+                        r2_group_path, 
+                        Out_Prob_R1_path, 
+                        param_bio_template_path,
+                        GROUP['group']
                         )
                         print("\n========== Done with PARAMETER FILES for %s" % (MODEL))
-                        r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
+
+                        # r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
+                        # shutil.copy(
+                        #     r1_group_path + "/angle_output_probabilities.txt",
+                        #     r1_prob,
+                        # )
+
+                        # making_orientations_submission (
+                        #     libraryParmPath=self.param_path,
+                        #     r1_foo=r1_prob,
+                        #     model_now=MODEL,
+                        #     group_now=GROUP['group'],
+                        #     model_tmp_path=group_param_path,
+                        #     model_group_path=r2_group_path,
+                        #     partition_choice=partition_choice,
+                        #     path_to_output=self.output_path,
+                        # )
+
+
+                    # elif os.path.basename(group_param_path) == "tasks":
+                    if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
                         shutil.copy(
-                            r1_group_path + "/angle_output_probabilities.txt",
-                            r1_prob,
-                        )
-
-                        making_orientations_submission (
-                            libraryParmPath=self.param_path,
-                            r1_foo=r1_prob,
-                            model_now=MODEL,
-                            group_now=GROUP['group'],
-                            model_tmp_path=group_param_path,
-                            model_group_path=r2_group_path,
-                            partition_choice=partition_choice,
-                            path_to_output=self.output_path,
-                        )
-
-
-                    elif os.path.basename(group_param_path) == "tasks":
-                    # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
-                        shutil.copy(
-                            param_v + "/launch-one-template.sh", group_param_path
+                            param_v + "/launch-one-NONCONSENSUS-template.sh", group_param_path
                         )
                         launch_one_path = os.path.join(
-                            group_param_path, "launch-one-template.sh"
+                            group_param_path, "launch-one-NONCONSENSUS-template.sh"
                         )
                         # print(launch_one_path)
                         with open(launch_one_path, "r+") as launchIn:
@@ -517,16 +526,18 @@ class NORMAL_MODE_ROUND2:
                         task_path = os.path.join(
                             group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
                         )
-                        particle_count = int(GROUP["nframe"])
+
+                        start,end = particle_counter(GROUP['group'])
+                        # print(start,end,GROUP['nframe'])
+                            # print(i)
                         with open(task_path, "w+") as task:
-                            for i in range(particle_count):
+                            for i in range(int(start),int(end)):
                                 # print(i)
                                 launch_one_command = (
-                                    "./launch-one.sh %s %s %s  &>> out.log"
+                                    "./launch-one.sh %s %s %s.txt  &>> out.log"
                                     % (i, GROUP["group"], MODEL)
                                 )
                                 task.write(launch_one_command + "\n")
-                        task.close()
                         print(
                             "\n========== Done with creating Task File for %s" % (MODEL)
                         )
@@ -539,6 +550,11 @@ class NORMAL_MODE_ROUND2:
                 ["disBatch", "--help"], stderr=subprocess.STDOUT
             ).decode("utf8")
             print("\n========== disBatch is LOADED. SUBMIT JOBS NOW!\n")
+        except:
+            print(
+                "\nYou need to load disBatch to launch ROUND 2. PROGRAM TERMINATED!!!\n"
+            )
+        else:
             MODELS_LIST = open(self.model_list)
             MODELS = MODELS_LIST.readlines()
             GROUPS = pd.read_csv(
@@ -554,34 +570,24 @@ class NORMAL_MODE_ROUND2:
                     continue
                 a_model_path = os.path.join(op_v, MODEL)
                 round2_path = os.path.join(a_model_path, "round2")
-                GROUP = None
                 for ind, GROUP in GROUPS.iterrows():
                     r2_group_path = os.path.join(round2_path, GROUP["group"])
                     task_path = os.path.join(r2_group_path, "tasks")
-                    # task_file_path =os.path.join(task_path,"task_%s_%s"%(MODEL,GROUP['group']))
-                    # print(task_file_path)
                     task_file_name = "task_%s_%s" % (MODEL, GROUP["group"])
+                    task_file_path = os.path.join(task_path,task_file_name)
+
+                    current_dir = os.getcwd()
+                    # print(current_dir,task_path)
                     os.chdir(task_path)
-                    sbatch_cmd = "sbatch -p %s -J %s -t 125 disBatch %s" % (
+                    # print(os.getcwd())
+                    sbatch_cmd = ('sbatch -p %s -J %s -t 125 disBatch %s' % (
                         partition_choice,
                         MODEL,
                         task_file_name,
                     )
-                    # print(os.getcwd(),sbatch_cmd)
-                    current_dir = os.getcwd()
-
-                    os.chdir(task_path)
-                    sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
-                        MODEL,
-                        task_file_name,
                     )
-                    # print(os.getcwd(),sbatch_cmd)
-                    subprocess.run(sbatch_cmd, shell=True)
+                    subprocess.run(sbatch_cmd,shell=True,check=True)
                     os.chdir(current_dir)
-        except:
-            print(
-                "\nYou need to load disBatch to launch ROUND 2. PROGRAM TERMINATED!!!\n"
-            )
 
     def CLEAN(self):
         delete_choice = input(

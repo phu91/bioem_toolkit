@@ -7,6 +7,8 @@ import ray
 from time import time
 
 ray.init()
+assert ray.is_initialized()
+
 print('''This cluster consists of
     {} nodes in total
     {} CPU resources in total
@@ -33,39 +35,39 @@ def quat_calculation(particle_now):
     particle_angle = r1_prob_result.loc[(r1_prob_result['particle']==particle_now)]
     total_orientation=len(particle_angle)
     nTotal_orientation=grid_num_points*total_orientation
-    tmp_file_path = os.path.join(trash_collector_path,"tmp_angle_%s"%(particle_now))
+    tmp_file_path = os.path.join(trash_collector_path,"tmp_angle_%s_%s_%s"%(particle_now,MODEL,GROUP))
     with open(tmp_file_path,"w+") as tmp1:
         for ind,orient in particle_angle.iterrows():
             tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(orient['q1'],orient['q2'],orient['q3'],orient['q4']))
     # print("Run MQ on particle %s"%(particle_now))
-    tmp_file_2_path = os.path.join(trash_collector_path,"sampling_angle_%s"%(particle_now))
-    
+
+    tmp_file_2_path = os.path.join(trash_collector_path,"sampling_angle_%s_%s_%s"%(particle_now,MODEL,GROUP))
     current_directory = os.getcwd()
     os.chdir(toolkit_directory)
     multiply_quat_exe_location = os.path.abspath('./bioem_toolkit/library/multiple_Quat/multiply_quat.exe')
     multiple_quat_exe_cmd ="%s %s %s %s"%(multiply_quat_exe_location,os.path.abspath(tmp_file_path),os.path.abspath(tmp_file_2_path),grid_file)
     os.chdir(current_directory)
     subprocess.run(multiple_quat_exe_cmd,shell=True)
-    ANG_tmp_file_path = os.path.join(trash_collector_path,"ANG_for-R2-%s"%(particle_now))
+    ANG_tmp_file_path = os.path.join(trash_collector_path,"ANG_R2_%s_%s_%s"%(particle_now,MODEL,GROUP))
+
     with open(ANG_tmp_file_path,'w+') as tmp1:
         tmp1.write(str(nTotal_orientation)+"\n")
     #Its faster to just dump the contents of a file rather than just write it line by line.
-    concatenate_command = "cat " +  str(tmp_file_2_path) + " >> " + str(ANG_tmp_file_path)
-    subprocess.run(concatenate_command, shell=True)
-        # for f in tmp_file_2_path:
-      #  with open(tmp_file_2_path,'r+') as tmp2:
-      #      lines=tmp2.readlines()
-      #      for line in lines:
-      #          string=line.split()
-      #          # print(string)
-      #          tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
-      #      # shutil.copy2(tmp2,tmp1)
-    #print(ANG_tmp_file_path)
-    #print(orientation_path)
-    shutil.copy(ANG_tmp_file_path,orientation_path)
-    #os.remove(tmp_file_path)
-    #os.remove(tmp_file_2_path)
-    #os.remove(ANG_tmp_file_path)
+    ### PROBLEM: BIOEM ROUND 2 requires a very specific formated strings for the ANGLES. (%12.6f%12.6f%12.6f%12.6)
+    ### Can you add this specific formated string into 'cat'?
+    # concatenate_command = "cat " +  str(tmp_file_2_path) + " >> " + str(ANG_tmp_file_path)
+    # subprocess.run(concatenate_command, shell=True)
+        with open(tmp_file_2_path,'r+') as tmp2:
+            lines=tmp2.readlines()
+            for line in lines:
+                string=line.split()
+                # print(string)
+                tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
+    shutil.copy(ANG_tmp_file_path,os.path.join(orientation_path,"ANG_R2_%s"%(particle_now)))
+    os.remove(tmp_file_path)
+    os.remove(tmp_file_2_path)
+    os.remove(ANG_tmp_file_path)
+
 
 # @timer_func
 def making_orientations():
@@ -73,13 +75,13 @@ def making_orientations():
     MODEL="WhatMODEL"
     GROUP="WhatGROUP"
     r1_prob="WherePROB"
-    workdir_round2="WhereWORKDIR2"
-    orientation_path = os.path.join(workdir_round2,GROUP,"orientations")
+    workdir_round2="WhereWORKDIR2"  #   INCLUDED GROUP
+    orientation_path = os.path.join(workdir_round2,"orientations")
     trash_collector_path = "/dev/shm/"
     os.makedirs(orientation_path,exist_ok=True)
     os.chmod(orientation_path,stat.S_IRWXU)
     r1_prob_read = open(r1_prob,"r+")
-    tmp_file_path = os.path.join(trash_collector_path,"tmp_orient")
+    tmp_file_path = os.path.join(trash_collector_path,"tmp_orient_%s_%s"%(MODEL,GROUP))
     tmp_file = open(tmp_file_path,"w+")
     lines = r1_prob_read.readlines()
     for line in range(3,len(lines)):
@@ -93,10 +95,10 @@ def making_orientations():
     particle_list = r1_prob_result['particle'].drop_duplicates().values
     ids = [quat_calculation.remote(x) for x in particle_list]
     ray.get(ids)
+    print("\n========== Done with ORIENTATION FILES for MODEL: %s in GROUP: %s" % (MODEL,GROUP))
+    # ray_status_cmd = ('ray job list --log-style pretty')
+    # subprocess.run(ray_status_cmd,shell=True)
 
 start = time()
-r2_group_path="."
-orientations_path = "WhereOrientations"
-CLEAN_P1_PROB = making_orientations
-CLEAN_P1_PROB()
+making_orientations()
 print("Duration: %s"%(time()-start))

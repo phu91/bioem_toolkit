@@ -6,7 +6,7 @@
 #SBATCH -J r1-WhatModel
 # Queue (Partition):
 #SBATCH --constraint=rome
-#SBATCH --partition=ccb
+#SBATCH --partition=WhatPartition
 # Request 1 node(s)
 #SBATCH --nodes=1
 # Set the number of tasks per node (=MPI ranks)
@@ -26,4 +26,4 @@ export GPU=0
 export BIOEM_DEBUG_OUTPUT=0
 export BIOEM_ALGO=2
 
-mpirun --map-by socket:pe=$OMP_NUM_THREADS -np 16 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM --Modelfile ../../WhatModel --Particlesfile WhereParticle --ReadMRC --Inputfile ../Param_BioEM_ABC --ReadOrientation ../Quat_36864
+mpirun --map-by socket:pe=$OMP_NUM_THREADS -np 16 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM --Modelfile WhereModel/WhatModel.txt --Particlesfile WhereParticle --ReadMRC --Inputfile ../Param_BioEM_ABC --ReadOrientation ../Quat_36864

@@ -6,14 +6,9 @@ import pandas as pd
 import mrcfile as mrc
 import numpy as np
 
-<<<<<<< HEAD
 # adding library to the system path
 sys.path.insert(0, "library/parameters")
 # from multiprocessing import Process
-=======
-# adding library to the system path. Should use this.
-sys.path.insert(0, 'library/parameters')
->>>>>>> miro
 
 #TODO refactor code so that consensus is just a type of job. 
 # TODO submit make orientation for consensus job. 
@@ -26,7 +21,6 @@ def timer_func(func):
         t1 = time()
         result = func(*args, **kwargs)
         t2 = time()
-<<<<<<< HEAD
         print(f"========== Function {func.__name__!r} executed in {(t2-t1):.4f}s")
         return result
 
@@ -39,14 +33,8 @@ def choosing_cluster():
         partition_choice = input("Please select your PARTITION on SLURM: \n")
         return partition_choice
     else:
-        print("========== MULTIPLY_QUAT will be done on local machine")
+        print("\n========== MULTIPLY_QUAT will be done on local machine")
         return None
-=======
-        print(f"Function {func.__name__!r} executed in {(t2-t1):.4f}s")
-        return result
-
-    return wrap_func
->>>>>>> miro
 
 
 def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
@@ -57,11 +45,7 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
         tmp_file.write(lines[line])
     tmp_file.close()
     r1_read.close()
-<<<<<<< HEAD
-    r1_result = pd.read_csv("tmp_prob", delim_whitespace="True", header=None)
-=======
     r1_result = pd.read_csv("tmp_prob", delim_whitespace="True", header=None,dtype=str)
->>>>>>> miro
     r1_result = r1_result.iloc[:, [1, 4, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]]
     label_list = [
         "particle",
@@ -96,12 +80,10 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template):
                         line[1] = 0.3
                     string = "  ".join(map(str, line))
                     file2.write(string + "\n")
-<<<<<<< HEAD
     # os.remove("tmp_prob")
 
 
 def making_orientations_submission(
-    beforeModelsPath,
     libraryParmPath,
     r1_foo,
     model_now,
@@ -111,7 +93,7 @@ def making_orientations_submission(
     partition_choice,
     path_to_output,
 ):
-    launchOri_workingdir = os.path.join(beforeModelsPath, "0-QM-tasks")
+    launchOri_workingdir = os.path.join(path_to_output, "0-QM-tasks")
     os.makedirs(launchOri_workingdir, exist_ok=True)
 
     launchOri_template_path = os.path.join(
@@ -143,10 +125,12 @@ def making_orientations_submission(
         makeOri_file = file.read()
         makeOri_file = makeOri_file.replace("WhatMODEL", model_now)
         makeOri_file = makeOri_file.replace("WhatGROUP", group_now)
-        makeOri_file = makeOri_file.replace("WhereFOO", r1_foo)
+        makeOri_file = makeOri_file.replace("WherePROB", r1_foo)
         makeOri_file = makeOri_file.replace("WhereOrientations", model_orientation_path)
         makeOri_file = makeOri_file.replace("WhereQUAT", Quat_exe_abs)
         makeOri_file = makeOri_file.replace("WhereGridFile", Grid_file_path_abs)
+        makeOri_file = makeOri_file.replace("WhereTOOLKIT",os.path.abspath(os.path.normpath(__file__ + '/../..')))
+        makeOri_file = makeOri_file.replace("WhereWORKDIR2",model_group_path)
 
         with open(makeOri_model_tmp_file_path, "w+") as outfile:
             outfile.write(makeOri_file)
@@ -184,7 +168,7 @@ def making_orientations_submission(
             curdir = os.getcwd()
             os.chdir(launchOri_workingdir)
             print(
-                "\n========== Run MQ on SLURM: MODEL %s GROUP %s"
+                "\n========== Run MQ on SLURM for MODEL: %s GROUP: %s"
                 % (model_now, group_now)
             )
             subprocess.Popen(launch_one_command, shell=True)
@@ -193,42 +177,9 @@ def making_orientations_submission(
         curdir = os.getcwd()
         os.chdir(model_tmp_path)
         makeOri_cmd = "python makeOri.py"
-        print(
-            "\n========== Run MQ on LOCAL: MODEL %s GROUP %s" % (model_now, group_now)
-        )
         subprocess.Popen(makeOri_cmd, shell=True)
         # time.sleep(1)
         os.chdir(curdir)
-=======
-        file1.close()
-        file2.close()
-    # os.remove("tmp_prob")
-
-def making_orientations_submission(libraryPath,r1_prob,model_now,group_now,workdir_round2):
-
-    workdir_round2 = os.path.abspath(workdir_round2)
-    #group_now_path = os.path.abspath()
-    ray_template_path = os.path.join(libraryPath,"slurm-RAY-template.sh")
-    makeOri_template_path = os.path.join(libraryPath,"makeOri-template.py")
-    ray_making_path = os.path.join(libraryPath,"slurm-RAY-making.py")
-
-    ray_workdir = os.path.join(workdir_round2,"slurm-RAY.sh")
-    makeOri_workdir = os.path.join(workdir_round2,"makeOri.py")
-
-    shutil.copy(ray_template_path,ray_workdir)
-    shutil.copy(ray_making_path,workdir_round2)
-    shutil.copy(makeOri_template_path,makeOri_workdir)
-    with open(makeOri_template_path, "r+") as file:
-        makeOri_file = file.read()
-        makeOri_file = makeOri_file.replace("WhatMODEL",os.path.basename(os.path.normpath(model_now)))
-        makeOri_file = makeOri_file.replace("WhatGROUP",os.path.basename(os.path.normpath(group_now)))
-        makeOri_file = makeOri_file.replace("WherePROB",os.path.abspath(r1_prob))
-        makeOri_file = makeOri_file.replace("WhereTOOLKIT",os.path.abspath(os.path.normpath(__file__ + '/../..')))
-        makeOri_file = makeOri_file.replace("WhereWORKDIR2",workdir_round2)
-        with open(makeOri_workdir,"w+") as outfile:
-            outfile.write(makeOri_file)
-
->>>>>>> miro
 
 
 def validate_zipfile(path_to_zipfile):
@@ -349,6 +300,8 @@ class NORMAL_MODE_ROUND1:
         self.output_path = output_path
 
     def PREP(self):
+        global partition_choice
+        partition_choice = choosing_cluster()
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -356,11 +309,7 @@ class NORMAL_MODE_ROUND1:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-=======
             comment="#",dtype=str
->>>>>>> miro
         )
         # print(GROUPS)
         # Strips the newline character
@@ -374,34 +323,18 @@ class NORMAL_MODE_ROUND1:
             os.makedirs(os.path.join(a_model_path, "round1"), exist_ok="True")
 
             for ind, GROUP in GROUPS.iterrows():
-<<<<<<< HEAD
-                round1_path = os.path.join(a_model_path, "round1")
-                r1_group_path = os.path.join(round1_path, GROUP["group"])
-                os.makedirs(r1_group_path, exist_ok="True")
-
-                shutil.copy(os.path.join(mp_v, MODEL + ".txt"), a_model_path)
-=======
                 round1_path = os.path.join(a_model_path,"round1")
                 r1_group_path = os.path.join(round1_path, GROUP['group'])
                 os.makedirs(r1_group_path, exist_ok='True')
 
-                
-                shutil.copy(os.path.join(mp_v,MODEL),a_model_path)
->>>>>>> miro
+                shutil.copy(os.path.join(mp_v, MODEL + ".txt"), a_model_path)
                 shutil.copy(
                     param_v + "/Param_BioEM_ABC_template",
                     round1_path + "/Param_BioEM_ABC",
                 )
-<<<<<<< HEAD
                 shutil.copy(param_v + "/Quat_36864", round1_path)
 
                 with open(param_v + "/slurm-r1-template.sh", "r+") as file:
-=======
-                shutil.copy(param_v+"/Param_BioEM_ABC_template",round1_path+"/Param_BioEM_ABC")
-                shutil.copy(param_v+"/Quat_36864",round1_path)
-
-                with open(param_v+"/slurm-r1-template.sh", "r+") as file:
->>>>>>> miro
                     slurm_file = file.read()
                     slurm_file_out_path = str(r1_group_path) + "/slurm-r1-rusty.sh"
                     # print(slurm_file_out_path)
@@ -411,7 +344,9 @@ class NORMAL_MODE_ROUND1:
                         "WhereParticle",
                         os.path.join(self.particle_path, GROUP["particle_file"]),
                     )
+                    slurm_file = slurm_file.replace("WhereModel", os.path.join(self.model_path))
                     slurm_file = slurm_file.replace("WhatGroup", GROUP["group"])
+                    slurm_file = slurm_file.replace("WhatPartition", partition_choice)
 
                     with open(slurm_file_out_path, "w+") as outfile:
                         outfile.write(slurm_file)
@@ -419,21 +354,15 @@ class NORMAL_MODE_ROUND1:
                 file.close()
 
     def RUN(self):
-<<<<<<< HEAD
-=======
-        print('running!')
->>>>>>> miro
+        # print('running!')
+        # partition_choice = choosing_cluster()
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-=======
             comment="#",dtype=str
->>>>>>> miro
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -444,24 +373,15 @@ class NORMAL_MODE_ROUND1:
             round1_path = os.path.join(a_model_path, "round1")
             for ind, GROUP in GROUPS.iterrows():
                 r1_group_path = os.path.join(round1_path, GROUP["group"])
-<<<<<<< HEAD
-                slurm_file_out_path = os.path.join(r1_group_path, "slurm-r1-rusty.sh")
-                os.chmod(slurm_file_out_path, stat.S_IRWXU)
-                # print(slurm_file_out_path)
-                os.chdir(r1_group_path)
-                sbatch_cmd = "sbatch " + slurm_file_out_path
-                subprocess.run(str(sbatch_cmd), shell=True, check=True)
-=======
                 cwd = os.getcwd()
                 os.chdir(r1_group_path)
                 slurm_file_out_path = "slurm-r1-rusty.sh"
 
                 os.chmod(slurm_file_out_path, stat.S_IRWXU)
                 # print(slurm_file_out_path)
-                sbatch_cmd = "sbatch " + slurm_file_out_path
+                sbatch_cmd = ('sbatch %s'%(slurm_file_out_path))
                 subprocess.run(str(sbatch_cmd), shell=True, check=True)
                 os.chdir(cwd)
->>>>>>> miro
 
 
 class NORMAL_MODE_ROUND2:
@@ -476,11 +396,8 @@ class NORMAL_MODE_ROUND2:
         self.output_path = output_path
 
     def PREP(self):
-<<<<<<< HEAD
         global cluster_choice, partition_choice
-=======
-        # global task_path
->>>>>>> miro
+        partition_choice = choosing_cluster()
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -488,14 +405,8 @@ class NORMAL_MODE_ROUND2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-        )
-        partition_choice = choosing_cluster()
-=======
             comment="#",dtype=str
         )
->>>>>>> miro
         # print(GROUPS)
         # Strips the newline character
         for MODEL in MODELS:
@@ -513,7 +424,7 @@ class NORMAL_MODE_ROUND2:
                 r1_group_path = os.path.join(round1_path, GROUP["group"])
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 os.makedirs(r2_group_path, exist_ok="True")
-                print(r2_group_path)
+                # print(r2_group_path)
                 subdir_list = [
                     "/parameters",
                     "/orientations",
@@ -530,116 +441,96 @@ class NORMAL_MODE_ROUND2:
 
                     if os.path.basename(group_param_path) == "tmp_files":
                         shutil.copy(
-                           param_v + "/Param_BioEM_ABC_template", group_param_path
+                        param_v + "/Param_BioEM_ABC_template", group_param_path
                         )
                         param_bio_template_path = os.path.join(
-                           group_param_path, "Param_BioEM_ABC_template"
+                        group_param_path, "Param_BioEM_ABC_template"
                         )
                         shutil.copy(
-                           r1_group_path + "/Output_Probabilities",
-                           group_param_path + "/Output_Probabilities-R1",
+                        r1_group_path + "/Output_Probabilities",
+                        group_param_path + "/Output_Probabilities-R1",
                         )
                         Out_Prob_R1_path = os.path.join(
-                           group_param_path, "Output_Probabilities-R1"
+                        group_param_path, "Output_Probabilities-R1"
                         )
 
-                        CLEAN_P1_PROB = clean_R1_Probability
-                        CLEAN_P1_PROB(
-                           r2_group_path, Out_Prob_R1_path, param_bio_template_path
+                        clean_R1_Probability(
+                        r2_group_path, Out_Prob_R1_path, param_bio_template_path
                         )
-                        print("========== Done with PARAMETER FILES for %s" % (MODEL))
+                        print("\n========== Done with PARAMETER FILES for %s" % (MODEL))
                         r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
                         shutil.copy(
                             r1_group_path + "/angle_output_probabilities.txt",
-                            group_param_path + "/PROB_ANGLE_R1.txt",
+                            r1_prob,
                         )
 
-                        making_orientations_submission (libraryPath = param_v, r1_prob = r1_prob, model_now = a_model_path , group_now = r2_group_path, workdir_round2 = r2_group_path )
-                        ray_template_path = os.path.join(param_v, "slurm-RAY-template.sh")
-                        current_directory = os.getcwd()
-                        os.chdir(r2_group_path)
-                        partition = 'ccb'
+                        making_orientations_submission (
+                            libraryParmPath=self.param_path,
+                            r1_foo=r1_prob,
+                            model_now=MODEL,
+                            group_now=GROUP['group'],
+                            model_tmp_path=group_param_path,
+                            model_group_path=r2_group_path,
+                            partition_choice=partition_choice,
+                            path_to_output=self.output_path,
+                        )
 
-                        a_group_path = os.path.abspath(r2_group_path)
-                        ray_cmd = 'python %s --exp-name %s-%s --command "python %s" --num-nodes 1 --partition %s --load-env %s '%('slurm-RAY-making.py',MODEL,GROUP.group,'./makeOri.py',partition, '"source /mnt/home/mastore/.bashrc"')
-                        subprocess.run(ray_cmd,shell=True)
-                        os.chdir(current_directory)
-
-                        print("========== Done with ORIENTATION FILES for %s" % (MODEL))
 
                     elif os.path.basename(group_param_path) == "tasks":
-                      # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
-                      shutil.copy(
-                          param_v + "/launch-one-template.sh", group_param_path
-                      )
-                      launch_one_path = os.path.join(
-                          group_param_path, "launch-one-template.sh"
-                      )
-                      # print(launch_one_path)
-                      with open(launch_one_path, "r+") as launchIn:
-                          with open(
-                              group_param_path + "/launch-one.sh", "w+"
-                          ) as launchOut:
-                              lines = launchIn.readlines()
-                              for line in lines:
-                                  line = line.split()
-                                  # print(line)
-                                  if len(line) >= 2:
-                                      if line[1] == "SLURM_JOB_NAME=WhatModel-R2":
-                                          line[1] = "SLURM_JOB_NAME=%s-R2" % (MODEL)
-                                      elif line[1] == "WhereRound2=WhereRound2":
-                                          line[1] = "WhereRound2=%s" % (round2_path)
-                                      elif line[1] == "WhereParticles=WhereParticles":
-                                          line[1] = "WhereParticles=%s" % (
-                                              self.particle_path
-                                          )
-                                      elif line[1] == "WhereModel=WhereModel":
-                                          line[1] = "WhereModel=%s" % (
-                                              os.path.abspath(self.model_path)
-                                          )
-                                  # print(*line)
-                                  string = "  ".join(map(str, line))
-                                  launchOut.write(string + "\n")
-                              launchOut.close()
-                      launchIn.close()
-                      os.chmod(group_param_path + "/launch-one.sh", stat.S_IRWXU)
-                      # os.remove(launch_one_path)
+                    # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
+                        shutil.copy(
+                            param_v + "/launch-one-template.sh", group_param_path
+                        )
+                        launch_one_path = os.path.join(
+                            group_param_path, "launch-one-template.sh"
+                        )
+                        # print(launch_one_path)
+                        with open(launch_one_path, "r+") as launchIn:
+                            with open(
+                                group_param_path + "/launch-one.sh", "w+"
+                            ) as launchOut:
+                                lines = launchIn.readlines()
+                                for line in lines:
+                                    line = line.split()
+                                    # print(line)
+                                    if len(line) >= 2:
+                                        if line[1] == "SLURM_JOB_NAME=WhatModel-R2":
+                                            line[1] = "SLURM_JOB_NAME=%s-R2" % (MODEL)
+                                        elif line[1] == "WhereRound2=WhereRound2":
+                                            line[1] = "WhereRound2=%s" % (round2_path)
+                                        elif line[1] == "WhereParticles=WhereParticles":
+                                            line[1] = "WhereParticles=%s" % (
+                                                self.particle_path
+                                            )
+                                        elif line[1] == "WhereModel=WhereModel":
+                                            line[1] = "WhereModel=%s" % (
+                                                os.path.abspath(self.model_path)
+                                            )
+                                    # print(*line)
+                                    string = "  ".join(map(str, line))
+                                    launchOut.write(string + "\n")
+                                launchOut.close()
+                        launchIn.close()
+                        os.chmod(group_param_path + "/launch-one.sh", stat.S_IRWXU)
+                        # os.remove(launch_one_path)
 
-                      task_path = os.path.join(
-                          group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
-                      )
-                      particle_count = int(GROUP["nframe"])
-                      with open(task_path, "w+") as task:
-                          for i in range(particle_count):
-                              # print(i)
-                              launch_one_command = (
-                                  "./launch-one.sh %s %s %s  &>> out.log"
-                                  % (i, GROUP["group"], MODEL)
-                              )
-                              task.write(launch_one_command + "\n")
-                      task.close()
-                      print(
-                          "========== Done with creating Task File for %s" % (MODEL)
-                      )
-                        
->>>>>>> miro
+                        task_path = os.path.join(
+                            group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
+                        )
+                        particle_count = int(GROUP["nframe"])
+                        with open(task_path, "w+") as task:
+                            for i in range(particle_count):
+                                # print(i)
+                                launch_one_command = (
+                                    "./launch-one.sh %s %s %s  &>> out.log"
+                                    % (i, GROUP["group"], MODEL)
+                                )
+                                task.write(launch_one_command + "\n")
+                        task.close()
+                        print(
+                            "\n========== Done with creating Task File for %s" % (MODEL)
+                        )
 
-                    #     task_path = os.path.join(
-                    #         group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
-                    #     )
-                    #     particle_count = GROUP["nframe"]
-                    #     with open(task_path, "w+") as task:
-                    #         for i in range(particle_count):
-                    #             # print(i)
-                    #             launch_one_command = (
-                    #                 "./launch-one.sh %s %s %s  &>> out.log"
-                    #                 % (i, GROUP["group"], MODEL)
-                    #             )
-                    #             task.write(launch_one_command + "\n")
-                    #     task.close()
-                    #     print(
-                    #         "========== Done with creating Task File for %s" % (MODEL)
-                    #     )
 
     def RUN(self):
         partition_choice = choosing_cluster()
@@ -678,7 +569,7 @@ class NORMAL_MODE_ROUND2:
                     )
                     # print(os.getcwd(),sbatch_cmd)
                     current_dir = os.getcwd()
-                    
+
                     os.chdir(task_path)
                     sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
                         MODEL,
@@ -792,26 +683,17 @@ class CONSENSUS_MODE_ROUND_1:
         self.output_path = output_path
 
     def PREP(self):
-<<<<<<< HEAD
         global cluster_choice, partition_choice
-=======
->>>>>>> miro
         GROUPS = pd.read_csv(
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-        )
-        consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
-=======
             comment="#",dtype=str,
         )
         if args.command_line_mode==False:
             consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
         else:
             consensus_MODEL_name = args.consensus_model
->>>>>>> miro
         consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
         os.makedirs(consensus_MODEL_path, exist_ok="True")
         MODEL = consensus_MODEL_name
@@ -821,7 +703,6 @@ class CONSENSUS_MODE_ROUND_1:
         os.makedirs(round1_path, exist_ok="True")
 
         for ind, GROUP in GROUPS.iterrows():
-<<<<<<< HEAD
             r1_group_path = os.path.join(round1_path, GROUP["group"])
             os.makedirs(r1_group_path, exist_ok="True")
             shutil.copy(os.path.join(mp_v, MODEL + ".txt"), consensus_MODEL_path)
@@ -830,16 +711,6 @@ class CONSENSUS_MODE_ROUND_1:
             )
             shutil.copy(param_v + "/Quat_36864", round1_path)
             with open(param_v + "/slurm-r1-template.sh", "r+") as file:
-=======
-            print('making run file')
-            r1_group_path =os.path.join(round1_path,str(GROUP['group']))
-            os.makedirs(r1_group_path,exist_ok='True')
-            shutil.copy(os.path.join(mp_v,MODEL),consensus_MODEL_path)
-            shutil.copy(param_v+"/Param_BioEM_ABC_template",round1_path+"/Param_BioEM_ABC")
-            shutil.copy(param_v+"/Quat_36864",round1_path)
-            #TODO user specified template run file
-            with open(param_v+"/slurm-r1-template.sh",'r+') as file:
->>>>>>> miro
                 slurm_file = file.read()
                 slurm_file_out_path = str(r1_group_path) + "/slurm-r1-rusty.sh"
                 # print(slurm_file_out_path)
@@ -861,22 +732,6 @@ class CONSENSUS_MODE_ROUND_1:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-        )
-        consensus_MODEL_name = input("Please provide the CONSENSUS MODEL NAME:\n")
-        consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
-        print("\n========== CONSENSUS PATH: %s" % (consensus_MODEL_path))
-        round1_path = os.path.join(consensus_MODEL_path, "round1")
-        for ind, GROUP in GROUPS.iterrows():
-            r1_group_path = os.path.join(round1_path, GROUP["group"])
-            slurm_file_out_path = os.path.join(r1_group_path, "slurm-r1-rusty.sh")
-            os.chmod(slurm_file_out_path, stat.S_IRWXU)
-            # print(slurm_file_out_path)
-            os.chdir(r1_group_path)
-            sbatch_cmd = "sbatch " + slurm_file_out_path
-            subprocess.run(str(sbatch_cmd), shell=True, check=True)
-=======
             comment="#",dtype=str
         )
         print(GROUPS)
@@ -898,7 +753,6 @@ class CONSENSUS_MODE_ROUND_1:
             sbatch_cmd = "sbatch " + slurm_file_out_path
             subprocess.run(str(sbatch_cmd), shell=True, check=True)
             os.chdir(current_dir)
->>>>>>> miro
 
 
 class CONSENSUS_MODE_ROUND_2:
@@ -913,24 +767,16 @@ class CONSENSUS_MODE_ROUND_2:
         self.output_path = output_path
 
     def PREP_NONCONSENSUS(self):
-<<<<<<< HEAD
         global cluster_choice, partition_choice
-=======
->>>>>>> miro
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-        )
-=======
             comment="#",dtype=str
         )
         #This is here because we did consensus in round 1 but round 2 still looks at all the models we're interested in.
->>>>>>> miro
         consensus_MODEL_name = input(
             "\n========== Please provide the CONSENSUS MODEL NAME:\n"
         )
@@ -1006,16 +852,12 @@ class CONSENSUS_MODE_ROUND_2:
                                             )
                                         elif line[1] == "WhereOutput=WhereOutput":
                                             line[1] = "WhereOutput=%s" % (round2_path)
-<<<<<<< HEAD
-=======
                                         elif line[1] == "WhereRound1_CONSENSUS_Results=WhereRound1_CONSENSUS_Results":
                                             # this is a place holder, beacuse we need to run the make ori script on consensus round 2 to produce the finer grid. 
                                             # really we should figure out how to make this a variable. 
                                             consensus_round2_orientations_processed =(os.path.abspath(os.path.join(consensus_round1_group_path,'../../round2/')))
                                             consensus_round2_orientations_processed = consensus_round2_orientations_processed + '/$2'
-                                            
                                             line[1] = "WhereRound1_CONSENSUS_Results=%s" % (consensus_round2_orientations_processed)
->>>>>>> miro
                                             # print(round2_path)
                                     # print(*line)
                                     string = "  ".join(map(str, line))
@@ -1028,11 +870,7 @@ class CONSENSUS_MODE_ROUND_2:
                         task_path = os.path.join(
                             group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
                         )
-<<<<<<< HEAD
-                        particle_count = GROUP["nframe"]
-=======
                         particle_count = int(GROUP["nframe"])
->>>>>>> miro
                         with open(task_path, "w+") as task:
                             for i in range(particle_count):
                                 # print(i)
@@ -1049,21 +887,11 @@ class CONSENSUS_MODE_ROUND_2:
         print("\n========== CONSENSUS PATH: %s" % (consensus_MODEL_path))
 
     def PREP_CONSENSUS(self):
-<<<<<<< HEAD
         global cluster_choice, partition_choice
-=======
->>>>>>> miro
         GROUPS = pd.read_csv(
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-        )
-        consensus_MODEL_name = input(
-            "\n========== Please provide the CONSENSUS MODEL NAME:\n"
-        )
-=======
             comment="#",dtype=str
         )
         if args.command_line_mode == False:
@@ -1072,7 +900,6 @@ class CONSENSUS_MODE_ROUND_2:
             )
         else:
             consensus_MODEL_name = args.consensus_model
->>>>>>> miro
         consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
         os.makedirs(consensus_MODEL_path, exist_ok="True")
         os.makedirs(os.path.join(consensus_MODEL_path, "round2"), exist_ok="True")
@@ -1101,115 +928,6 @@ class CONSENSUS_MODE_ROUND_2:
                 os.makedirs(
                     consensus_round2_group_path + subdir_list[sub_dir], exist_ok="True"
                 )
-<<<<<<< HEAD
-                group_param_path = os.path.join(
-                    consensus_round2_group_path + subdir_list[sub_dir]
-                )
-
-                if os.path.basename(group_param_path) == "tmp_files":
-                    # self.param_path+"Param_BioEM_ABC_template"
-                    param_bio_R1_path = os.path.join(
-                        consensus_round1_path, "Param_BioEM_ABC"
-                    )
-                    shutil.copy(param_bio_R1_path, group_param_path)
-                    output_prob_from_R1 = os.path.join(
-                        consensus_round1_group_path, "Output_Probabilities"
-                    )
-                    Out_copied_Prob_R1_path = os.path.join(
-                        group_param_path, "Output_Probabilities-R1"
-                    )
-                    shutil.copy(output_prob_from_R1, Out_copied_Prob_R1_path)
-                    CLEAN_P1_PROB = clean_R1_Probability
-                    CLEAN_P1_PROB(
-                        consensus_round2_group_path,
-                        Out_copied_Prob_R1_path,
-                        param_bio_R1_path,
-                    )
-                    print(
-                        "========== Done with PARAMETER FILES for %s"
-                        % (consensus_MODEL_name)
-                    )
-                    shutil.copy(
-                        consensus_round1_group_path + "/foo.txt",
-                        group_param_path + "/PROB_ANGLE_R1.txt",
-                    )
-                    CLEAN_P1_FOO = making_orientations
-                    CLEAN_P1_FOO(
-                        group_param_path + "/PROB_ANGLE_R1.txt",
-                        consensus_round2_group_path,
-                    )
-                    print(
-                        "========== Done with ORIENTATION FILES for %s"
-                        % (consensus_MODEL_name)
-                    )
-
-                elif os.path.basename(group_param_path) == "tasks":
-                    # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
-                    launch_one_template_path = os.path.join(
-                        self.param_path, "launch-one-template.sh"
-                    )
-                    shutil.copy(launch_one_template_path, group_param_path)
-                    launch_one_path = os.path.join(
-                        group_param_path, "launch-one-template.sh"
-                    )
-                    # print(launch_one_path)
-                    with open(launch_one_path, "r+") as launchIn:
-                        with open(
-                            group_param_path + "/launch-one.sh", "w+"
-                        ) as launchOut:
-                            lines = launchIn.readlines()
-                            for line in lines:
-                                line = line.split()
-                                # print(line)
-                                if len(line) >= 2:
-                                    if line[1] == "SLURM_JOB_NAME=WhatModel-R2":
-                                        line[1] = "SLURM_JOB_NAME=%s-R2" % (
-                                            consensus_MODEL_name
-                                        )
-                                    elif line[1] == "WhereRound2=WhereRound2":
-                                        # print(consensus_round2_group_path)
-                                        line[1] = "WhereRound2=%s" % (
-                                            consensus_round2_path
-                                        )
-                                    elif line[1] == "WhereParticles=WhereParticles":
-                                        line[1] = "WhereParticles=%s" % (
-                                            self.particle_path
-                                        )
-                                    elif line[1] == "WhereModel=WhereModel":
-                                        line[1] = "WhereModel=%s" % (
-                                            os.path.abspath(self.model_path)
-                                        )
-                                # print(*line)
-                                string = "  ".join(map(str, line))
-                                launchOut.write(string + "\n")
-                            launchOut.close()
-                    launchIn.close()
-                    os.chmod(group_param_path + "/launch-one.sh", stat.S_IRWXU)
-                    # os.remove(launch_one_path)
-                    task_path = os.path.join(
-                        group_param_path,
-                        "task_%s_%s" % (consensus_MODEL_name, GROUP["group"]),
-                    )
-                    particle_count = GROUP["nframe"]
-                    with open(task_path, "w+") as task:
-                        for i in range(particle_count):
-                            # print(i)
-                            launch_one_command = (
-                                "./launch-one.sh %s %s %s  &>> out.log"
-                                % (i, GROUP["group"], consensus_MODEL_name)
-                            )
-                            task.write(launch_one_command + "\n")
-                    task.close()
-                    print(
-                        "\n========== Done with TASK FILES for CONSENSUS MODEL: %s"
-                        % (consensus_MODEL_name)
-                    )
-        # print("\n========== CONSENSUS PATH: %s"%(consensus_MODEL_path))
-
-    def RUN_NONCONSENSUS(self):
-        partition_choice = choosing_cluster()
-
-=======
 
                 group_param_path = os.path.join(
                     consensus_round2_group_path + subdir_list[sub_dir]
@@ -1228,14 +946,13 @@ class CONSENSUS_MODE_ROUND_2:
                         group_param_path, "Output_Probabilities-R1"
                     )
                     shutil.copy(output_prob_from_R1, Out_copied_Prob_R1_path)
-                    CLEAN_P1_PROB = clean_R1_Probability
-                    CLEAN_P1_PROB(
+                    clean_R1_Probability(
                         consensus_round2_group_path,
                         Out_copied_Prob_R1_path,
                         param_bio_R1_path,
                     )
                     print(
-                        "========== Done with PARAMETER FILES for %s"
+                        "\n========== Done with PARAMETER FILES for %s"
                         % (consensus_MODEL_name)
                     )
                     shutil.copy(
@@ -1247,13 +964,9 @@ class CONSENSUS_MODE_ROUND_2:
                     r2_group_path = a_model_path + '/round2'
                     print(consensus_round2_group_path)
                     making_orientations_submission (libraryPath = param_v, r1_prob = r1_prob, model_now = a_model_path , group_now = consensus_round2_group_path, workdir_round2 = r2_group_path )
-                    #CLEAN_P1_PROB = making_orientations_submission
-                    #CLEAN_P1_PROB(
-                    #    group_param_path + "/PROB_ANGLE_R1.txt",
-                    #    consensus_round2_group_path,
-                    #)
+
                     print(
-                        "========== Done with ORIENTATION FILES for %s"
+                        "\n========== Done with ORIENTATION FILES for %s"
                         % (consensus_MODEL_name)
                     )
 
@@ -1326,7 +1039,6 @@ class CONSENSUS_MODE_ROUND_2:
         # print("\n========== CONSENSUS PATH: %s"%(consensus_MODEL_path))
 
     def RUN_NONCONSENSUS(self):
->>>>>>> miro
         try:
             subprocess.check_output(
                 ["disBatch", "--help"], stderr=subprocess.STDOUT
@@ -1346,11 +1058,7 @@ class CONSENSUS_MODE_ROUND_2:
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-=======
             comment="#",dtype=str
->>>>>>> miro
         )
         for MODEL in MODELS:
             MODEL = MODEL.strip()
@@ -1366,56 +1074,6 @@ class CONSENSUS_MODE_ROUND_2:
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 task_path = os.path.join(r2_group_path, "tasks")
                 task_file_name = "task_%s_%s" % (MODEL, GROUP["group"])
-<<<<<<< HEAD
-                os.chdir(task_path)
-                sbatch_cmd = "sbatch -p %s -J %s -t 125 disBatch %s" % (
-                    partition_choice,
-                    MODEL,
-                    task_file_name,
-                )
-                # print(sbatch_cmd)
-                subprocess.run(sbatch_cmd, shell=True)
-
-    def RUN_CONSENSUS(self):
-        try:
-            subprocess.check_output(
-                ["disBatch", "--help"], stderr=subprocess.STDOUT
-            ).decode("utf8")
-            print("========== disBatch is LOADED. SUBMIT JOBS NOW!")
-        except:
-            print(
-                "\nYou need to load disBatch to launch ROUND 2. PROGRAM TERMINATED!!!\n"
-            )
-            exit
-
-        consensus_MODEL_name = input("\nPlease provide the CONSENSUS MODEL NAME:\n")
-        consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
-        GROUPS = pd.read_csv(
-            self.group_list,
-            names=["particle_file", "group", "nframe"],
-            delim_whitespace="True",
-            comment="#",
-        )
-        round2_path = os.path.join(consensus_MODEL_path, "round2")
-        GROUP = None
-        for ind, GROUP in GROUPS.iterrows():
-            r2_group_path = os.path.join(round2_path, GROUP["group"])
-            task_path = os.path.join(r2_group_path, "tasks")
-            task_file_name = "task_%s_%s" % (consensus_MODEL_name, GROUP["group"])
-            os.chdir(task_path)
-            sbatch_cmd = "sbatch -p ccm -J %s -t 125 disBatch %s" % (
-                consensus_MODEL_name,
-                task_file_name,
-            )
-            # print(sbatch_cmd)
-            subprocess.run(sbatch_cmd, shell=True)
-
-    def CLEAN_OUTPUT_NONCONSENSUS(self):
-        consensus_MODEL_name = input("\nPlease provide the CONSENSUS MODEL NAME:\n")
-        consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
-        MODELS_LIST = open(self.model_list)
-        MODELS = MODELS_LIST.readlines()
-=======
                 current_directory = os.getcwd()
                 os.chdir(task_path)
 
@@ -1446,33 +1104,10 @@ class CONSENSUS_MODE_ROUND_2:
         else:
             raise Exception ("It looks like you haven't specified a consensus model file but you've asked to run in consensus mode. ")
         consensus_MODEL_path = os.path.join(self.output_path,consensus_MODEL_name)
->>>>>>> miro
         GROUPS = pd.read_csv(
             self.group_list,
             names=["particle_file", "group", "nframe"],
             delim_whitespace="True",
-<<<<<<< HEAD
-            comment="#",
-        )
-        for MODEL in MODELS:
-            MODEL = MODEL.strip()
-            if MODEL[0] == "#":
-                # print("%s is skipped."%(MODEL[1:]))
-                continue
-            elif MODEL == consensus_MODEL_name:
-                continue
-            a_model_path = os.path.join(op_v, MODEL)
-            round2_path = os.path.join(a_model_path, "round2")
-            GROUP = None
-            print("========== Now cleaning %s" % (MODEL))
-            for ind, GROUP in GROUPS.iterrows():
-                r2_group_path = os.path.join(round2_path, GROUP["group"])
-                path_to_your_mess = os.path.join(r2_group_path, "outputs")
-                process_output_round2(
-                    MODEL, GROUP["group"], path_to_your_mess, GROUP["nframe"]
-                )
-
-=======
             comment="#",dtype=str
         )
         round2_path = os.path.join(consensus_MODEL_path,"round2")
@@ -1518,7 +1153,6 @@ class CONSENSUS_MODE_ROUND_2:
                     MODEL, GROUP["group"], path_to_your_mess, int(GROUP["nframe"])
                 )
 
->>>>>>> miro
     def CLEAN_OUTPUT_CONSENSUS(self):
         consensus_MODEL_name = input("\nPlease provide the CONSENSUS MODEL NAME:\n")
         consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
@@ -1725,7 +1359,7 @@ CHOOSE THE MODE:
 
     1. Prepping and Run BioEM normally
     2. Prepping and Run BioEM with one model to be chosen as
-       a CONSENSUS model
+    a CONSENSUS model
     3. Analysis suit
     4. EXIT NOW
 ----------------------------------------------------------
@@ -1871,11 +1505,6 @@ if  __name__ == "__main__":
 ####
 #phu the logic of this is so confusing. we need to rewrite it.
 final_choice = 0
-<<<<<<< HEAD
-while final_choice < 5:
-    mode_choice = input(note0 + "\n")
-    if mode_choice == "1":
-=======
 while final_choice <5:
     if args.command_line_mode == False:
         mode_choice = input(note0 + "\n")
@@ -1888,132 +1517,10 @@ while final_choice <5:
             final_choice = 5
         
     if mode_choice =='1':
->>>>>>> miro
         print("========== YOU CHOSE NORMAL MODE!!\n")
         job1 = NORMAL_MODE_ROUND1(mp_v, ml_v, gl_v, param_v, particle_v, op_v)
         job2 = NORMAL_MODE_ROUND2(mp_v, ml_v, gl_v, param_v, particle_v, op_v)
 
-<<<<<<< HEAD
-        choose_round = input("Please choose the ROUND (1 or 2):\n")
-        if choose_round == "1":
-            options = input(note1_normal + "\n")
-            if options == "1":
-                model = job1.PREP()
-            elif options == "2":
-                job1.RUN()
-            elif options == "3":
-                final_choice = 5
-                print("Program exited.")
-        else:
-            options = input(note2_normal + "\n")
-            if options == "1":
-                print("\nPREPPING for ROUND2.\n")
-                job2.PREP()
-            elif options == "2":
-                print("\nBATCH submission for ROUND2.\n")
-                job2.RUN()
-            elif options == "3":
-                print("\nPOST-PROCESSING OUTPUTS!!\n")
-                MODEL_PROCESSED = job2.CLEAN()
-                print("\n%s is CLEANED.\n" % (MODEL_PROCESSED))
-            elif options == "4":
-                print("\nCLEANING UP YOUR MESS NOW!\n")
-                MODEL_PROCESSED = job2.CLEAN_PARAMS()
-                print("\n%s is CLEANED.\n" % (MODEL_PROCESSED))
-            elif options == "5":
-                final_choice = 5
-                print("Program exited.")
-    elif mode_choice == "2":
-        print("========== YOU CHOSE CONSENSUS MODE!!\n")
-        job1 = CONSENSUS_MODE_ROUND_1(mp_v, ml_v, gl_v, param_v, particle_v, op_v)
-        job2 = CONSENSUS_MODE_ROUND_2(mp_v, ml_v, gl_v, param_v, particle_v, op_v)
-        create_consensus = input(
-            "Do you want to create CONSENSUS directory? (0: No, 1:Yes)?\n"
-        )
-
-        if create_consensus == "0":
-            print("========== ONLY RUN ROUND 2 for non-CONSENSUS MODELS")
-            options = input(note2_nonconsensus + "\n")
-            if options == "1":
-                print("\nPREPPING for ROUND2.\n")
-                job2.PREP_NONCONSENSUS()
-            elif options == "2":
-                print("\nBATCH submission for ROUND2.\n")
-                job2.RUN_NONCONSENSUS()
-            elif options == "3":
-                print("\nPOST-PROCESSING OUTPUTS!\n")
-                job2.CLEAN_OUTPUT_NONCONSENSUS()
-            elif options == "4":
-                job2.CLEAN_PARAMS()
-            elif options == "5":
-                final_choice = 5
-                print("Program exited.")
-        else:
-            print("========== MAKING CONSENSUS DIRECTORY!")
-            choose_round = input(
-                "Please choose the ROUND (1) or (2) or (3) for both rounds:\n"
-            )
-            if choose_round == "1":
-                options = input(note1_consensus + "\n")
-                if options == "1":
-                    job1.PREP()
-                elif options == "2":
-                    job1.RUN()
-                elif options == "3":
-                    print("Program exited.")
-                    final_choice = 5
-            elif choose_round == "2":
-                options = input(note2_consensus + "\n")
-                if options == "1":
-                    print("\nPREPPING for CONSENSUS.\n")
-                    job2.PREP_CONSENSUS()
-                elif options == "2":
-                    print("\nBATCH submission for CONSENSUS.\n")
-                    job2.RUN_CONSENSUS()
-                elif options == "3":
-                    print("\nPOST-PROCESSING OUTPUTS!\n")
-                    job2.CLEAN_OUTPUT_CONSENSUS()
-                elif options == "4":
-                    job2.CLEAN_PARAMS()
-                elif options == "5":
-                    final_choice = 5
-                    print("Program exited.")
-            elif choose_round == "3":
-                options = input(note3 + "\n")
-                if options == "1":
-                    print("\n========== PREPPING for CONSENSUS ROUND 1 & 2.\n")
-                    job1.PREP_NONCONSENSUS()
-                    job2.PREP_CONSENSUS()
-                elif options == "2":
-                    print("\n========== BATCH submission for CONSENSUS ROUND 1 & 2.\n")
-                    job1.RUN_NONCONSENSUS()
-                    job2.RUN_CONSENSUS()
-                elif options == "3":
-                    print("\n========== POST-PROCESSING OUTPUTS!\n")
-                    job1.CLEAN_OUTPUT_NONCONSENSUS()
-                    job2.CLEAN_OUTPUT_CONSENSUS()
-                elif options == "4":
-                    print("\n========== CLEANING UP YOUR MESS NOW!\n")
-                    job1.CLEAN_PARAMS()
-                    job2.CLEAN_PARAMS()
-                elif options == "5":
-                    print("Program exited.")
-                    final_choice = 5
-
-    elif mode_choice == "3":
-        print("========== ANALYSIS MODE!")
-        job1 = ANALYSIS_SUIT(mp_v, ml_v, gl_v, param_v, particle_v, op_v)
-        options = input(note4a + "\n")
-        if options == "1":
-            job1.collect_r2_output()
-        elif options == "2":
-            job1.make_matrix_log()
-        elif options == "3":
-            job1.execute_cryoBIFE()
-        else:
-            final_choice = 5
-
-=======
         if args.command_line_mode == False:
             choose_round = input("Please choose the ROUND (1 or 2):\n")
         else:
@@ -2204,6 +1711,5 @@ while final_choice <5:
         else:
             final_choice = 5
 
->>>>>>> miro
     elif mode_choice == "4":
         final_choice = 5

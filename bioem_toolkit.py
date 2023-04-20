@@ -36,6 +36,8 @@ def choosing_cluster():
         print("\n========== MULTIPLY_QUAT will be done on local machine")
         return None
 
+def counter(baseZero,count):
+    return int(baseZero) + count
 
 def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
     r1_read = open(r1_output, "r+")
@@ -205,19 +207,18 @@ def process_output_round2(delete_choice, MODEL, GROUP, path_to_output, nparticle
             path_to_output + "/OutPuts_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
         ) as out_zip:
             for i in range(nparticle):
-                counter = i+int(startFrame)
-                with open(path_to_output + "/out-%s" % (counter), "r+") as out_tmp_2:
+                with open(path_to_output + "/out-%s" % (counter(startFrame,i)), "r+") as out_tmp_2:
                     lines = out_tmp_2.readlines()
                     for line in range(5, len(lines)):
                         line = lines[line].split()
                         if line[2] == "LogProb:":
-                            line[1] = counter
+                            line[1] = counter(startFrame,i)
                             string = "  ".join(map(str, line))
                             out_tmp_1.write(string + "\n")
                             out_tmp_1.flush()
                 out_tmp_2.close()
                 out_zip.write(
-                    path_to_output + "/out-%s" % (counter),
+                    path_to_output + "/out-%s" % (counter(startFrame,i)),
                     os.path.basename(path_to_output + "/out-%s" % (i)),
                 )
     out_zip.close()
@@ -237,7 +238,7 @@ def process_output_round2(delete_choice, MODEL, GROUP, path_to_output, nparticle
         print("========== Original files will be SAVED.")
 
 
-def clean_params(delete_choice, MODEL, GROUP, path_to_param, nparticle: int):
+def clean_params(delete_choice, MODEL, GROUP, path_to_param, nparticle: int,startFrame, endFrame):
     subparam_list = ["parameters", "orientations"]
     for sub_dir in range(len(subparam_list)):
         group_param_path = os.path.join(path_to_param, subparam_list[sub_dir])
@@ -246,9 +247,9 @@ def clean_params(delete_choice, MODEL, GROUP, path_to_param, nparticle: int):
                 group_param_path + "/PARM_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
             ) as out_zip:
                 for i in range(nparticle):
-                    with open(group_param_path + "/Parm_%s" % (i), "r+") as out_tmp:
+                    with open(group_param_path + "/Parm_%s" % (counter(startFrame,i)), "r+") as out_tmp:
                         out_zip.write(
-                            group_param_path + "/Parm_%s" % (i),
+                            group_param_path + "/Parm_%s" % (counter(startFrame,i)),
                             os.path.basename(group_param_path + "/Parm_%s" % (i)),
                         )
                     out_tmp.close()
@@ -260,17 +261,17 @@ def clean_params(delete_choice, MODEL, GROUP, path_to_param, nparticle: int):
             if delete_choice == "0":
                 for i in range(nparticle):
                     # print("Parm_%s is removed."%(i))
-                    os.remove(group_param_path + "/Parm_%s" % (i))
+                    os.remove(group_param_path + "/Parm_%s" % (counter(startFrame,i)))
         elif os.path.basename(group_param_path) == "orientations":
             with zipfile.ZipFile(
                 group_param_path + "/ANG_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
             ) as out_zip:
                 for i in range(nparticle):
                     with open(
-                        group_param_path + "/ANG_for-R2-%s" % (i), "r+"
+                        group_param_path + "/ANG_R2_%s" % (counter(startFrame,i)), "r+"
                     ) as out_tmp:
                         out_zip.write(
-                            group_param_path + "/ANG_for-R2-%s" % (i),
+                            group_param_path + "/ANG_R2_%s" % (counter(startFrame,i)),
                             os.path.basename(group_param_path + "/ANG_for-R2-%s" % (i)),
                         )
                     out_tmp.close()
@@ -644,35 +645,9 @@ class NORMAL_MODE_ROUND2:
             for ind, GROUP in GROUPS.iterrows():
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
                 clean_params(
-                    delete_choice, MODEL, GROUP["group"], r2_group_path, GROUP["nframe"]
+                    delete_choice, MODEL, GROUP["group"], r2_group_path, GROUP["nframe"], GROUP["start"],GROUP["end"]
                 )
 
-    def CLEAN_PARAMS(self):
-        delete_choice = input(
-            "Do you want to keep the original files? Choose (0) NO or (1) YES\n"
-        )
-        MODELS_LIST = open(self.model_list)
-        MODELS = MODELS_LIST.readlines()
-        GROUPS = pd.read_csv(
-            self.group_list,
-            names=["particle_file", "group", "start", "end", "nframe"],
-            delim_whitespace="True",
-            comment="#",dtype=str
-        )
-        for MODEL in MODELS:
-            MODEL = MODEL.strip()
-            if MODEL[0] == "#":
-                print("%s is skipped." % (MODEL[1:]))
-                continue
-            a_model_path = os.path.join(op_v, MODEL)
-            round2_path = os.path.join(a_model_path, "round2")
-            GROUP = None
-            print("========== Now cleaning %s" % (MODEL))
-            for ind, GROUP in GROUPS.iterrows():
-                r2_group_path = os.path.join(round2_path, GROUP["group"])
-                clean_params(
-                    delete_choice, MODEL, GROUP["group"], r2_group_path, int(GROUP["nframe"])
-                )
 
 #################################### CONSENSUS CLASSES
 class CONSENSUS_MODE_ROUND_1:
@@ -1568,11 +1543,11 @@ while final_choice <5:
             elif options == "3":
                 print("\nPOST-PROCESSING OUTPUTS!!\n")
                 MODEL_PROCESSED = job2.CLEAN()
-                print("\n%s is CLEANED.\n" % (MODEL_PROCESSED))
+                # print("\n%s is CLEANED.\n" % (MODEL_PROCESSED))
             elif options == "4":
                 print("\nCLEANING UP DIRECTORIES!\n")
                 MODEL_PROCESSED = job2.CLEAN_PARAMS()
-                print("\n%s is CLEANED.\n" % (MODEL_PROCESSED))
+                # print("\n%s is CLEANED.\n" % (MODEL_PROCESSED))
             elif options == "5":
                 final_choice = 5
                 print("Program exited.")

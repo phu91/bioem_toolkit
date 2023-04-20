@@ -36,11 +36,6 @@ def choosing_cluster():
         print("\n========== MULTIPLY_QUAT will be done on local machine")
         return None
 
-def particle_counter(group_name):
-    group_name_split = group_name.split("-")
-    start = int(group_name_split[0])
-    end = int(group_name_split[1])+1
-    return start,end
 
 def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
     r1_read = open(r1_output, "r+")
@@ -69,11 +64,10 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
     ]
     r1_result.columns = label_list
     # print(r1_result.head(3))
-    start,end = particle_counter(group_now)
     for ind, particle in r1_result.iterrows():
         CTF_DEFOCUS_VALUE = particle["CTF_defocus"]
         with open(bioEM_template, "r+") as file1:
-            with open(working_dir + "/parameters/Parm_%s" % ([i for i in range(start,end)]), "w+") as file2:
+            with open(working_dir + "/parameters/Parm_%s" % (ind+int(group_now["start"])), "w+") as file2:
                 lines = file1.readlines()
                 # print(lines)
                 for line in lines:
@@ -98,6 +92,7 @@ def making_orientations_submission(
     model_group_path,
     partition_choice,
     path_to_output,
+    startFrame
 ):
     launchOri_workingdir = os.path.join(path_to_output, "0-QM-tasks")
     os.makedirs(launchOri_workingdir, exist_ok=True)
@@ -137,6 +132,7 @@ def making_orientations_submission(
         makeOri_file = makeOri_file.replace("WhereGridFile", Grid_file_path_abs)
         makeOri_file = makeOri_file.replace("WhereTOOLKIT",os.path.abspath(os.path.normpath(__file__ + '/../..')))
         makeOri_file = makeOri_file.replace("WhereWORKDIR2",model_group_path)
+        makeOri_file = makeOri_file.replace("WhenStart",startFrame)
 
         with open(makeOri_model_tmp_file_path, "w+") as outfile:
             outfile.write(makeOri_file)
@@ -200,7 +196,7 @@ def validate_zipfile(path_to_zipfile):
         raise Exception("========== BAD ZIP FILE!")
 
 
-def process_output_round2(delete_choice, MODEL, GROUP, path_to_output, nparticle: int):
+def process_output_round2(delete_choice, MODEL, GROUP, path_to_output, nparticle: int,startFrame, endFrame):
     sorted_output_path = os.path.join(
         path_to_output, "OutPut_SORTED_%s-%s" % (MODEL, GROUP)
     )
@@ -209,18 +205,19 @@ def process_output_round2(delete_choice, MODEL, GROUP, path_to_output, nparticle
             path_to_output + "/OutPuts_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
         ) as out_zip:
             for i in range(nparticle):
-                with open(path_to_output + "/out-%s" % (i), "r+") as out_tmp_2:
+                counter = i+int(startFrame)
+                with open(path_to_output + "/out-%s" % (counter), "r+") as out_tmp_2:
                     lines = out_tmp_2.readlines()
                     for line in range(5, len(lines)):
                         line = lines[line].split()
                         if line[2] == "LogProb:":
-                            line[1] = i
+                            line[1] = counter
                             string = "  ".join(map(str, line))
                             out_tmp_1.write(string + "\n")
                             out_tmp_1.flush()
                 out_tmp_2.close()
                 out_zip.write(
-                    path_to_output + "/out-%s" % (i),
+                    path_to_output + "/out-%s" % (counter),
                     os.path.basename(path_to_output + "/out-%s" % (i)),
                 )
     out_zip.close()
@@ -312,7 +309,7 @@ class NORMAL_MODE_ROUND1:
 
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -365,7 +362,7 @@ class NORMAL_MODE_ROUND1:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -408,7 +405,7 @@ class NORMAL_MODE_ROUND2:
 
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -463,30 +460,31 @@ class NORMAL_MODE_ROUND2:
                         r2_group_path, 
                         Out_Prob_R1_path, 
                         param_bio_template_path,
-                        GROUP['group']
+                        GROUP
                         )
                         print("\n========== Done with PARAMETER FILES for %s" % (MODEL))
 
-                        # r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
-                        # shutil.copy(
-                        #     r1_group_path + "/angle_output_probabilities.txt",
-                        #     r1_prob,
-                        # )
+                        r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
+                        shutil.copy(
+                            r1_group_path + "/angle_output_probabilities.txt",
+                            r1_prob,
+                        )
 
-                        # making_orientations_submission (
-                        #     libraryParmPath=self.param_path,
-                        #     r1_foo=r1_prob,
-                        #     model_now=MODEL,
-                        #     group_now=GROUP['group'],
-                        #     model_tmp_path=group_param_path,
-                        #     model_group_path=r2_group_path,
-                        #     partition_choice=partition_choice,
-                        #     path_to_output=self.output_path,
-                        # )
+                        making_orientations_submission (
+                            libraryParmPath=self.param_path,
+                            r1_foo=r1_prob,
+                            model_now=MODEL,
+                            group_now=GROUP['group'],
+                            model_tmp_path=group_param_path,
+                            model_group_path=r2_group_path,
+                            partition_choice=partition_choice,
+                            path_to_output=self.output_path,
+                            startFrame=GROUP['start']
+                        )
 
 
-                    # elif os.path.basename(group_param_path) == "tasks":
-                    if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
+                    elif os.path.basename(group_param_path) == "tasks":
+                    # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
                         shutil.copy(
                             param_v + "/launch-one-NONCONSENSUS-template.sh", group_param_path
                         )
@@ -527,11 +525,10 @@ class NORMAL_MODE_ROUND2:
                             group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
                         )
 
-                        start,end = particle_counter(GROUP['group'])
                         # print(start,end,GROUP['nframe'])
                             # print(i)
                         with open(task_path, "w+") as task:
-                            for i in range(int(start),int(end)):
+                            for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
                                 # print(i)
                                 launch_one_command = (
                                     "./launch-one.sh %s %s %s.txt  &>> out.log"
@@ -559,7 +556,7 @@ class NORMAL_MODE_ROUND2:
             MODELS = MODELS_LIST.readlines()
             GROUPS = pd.read_csv(
                 self.group_list,
-                names=["particle_file", "group", "nframe"],
+                names=["particle_file", "group", "start", "end", "nframe"],
                 delim_whitespace="True",
                 comment="#",
             )
@@ -597,7 +594,7 @@ class NORMAL_MODE_ROUND2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",
         )
@@ -609,7 +606,6 @@ class NORMAL_MODE_ROUND2:
 
             a_model_path = os.path.join(op_v, MODEL)
             round2_path = os.path.join(a_model_path, "round2")
-            GROUP = None
             print("\n========== Now cleaning %s" % (MODEL))
             for ind, GROUP in GROUPS.iterrows():
                 r2_group_path = os.path.join(round2_path, GROUP["group"])
@@ -620,6 +616,8 @@ class NORMAL_MODE_ROUND2:
                     GROUP["group"],
                     path_to_your_mess,
                     GROUP["nframe"],
+                    GROUP["start"],
+                    GROUP["end"]
                 )
 
     def CLEAN_PARAMS(self):
@@ -630,7 +628,7 @@ class NORMAL_MODE_ROUND2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",
         )
@@ -657,7 +655,7 @@ class NORMAL_MODE_ROUND2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -692,7 +690,7 @@ class CONSENSUS_MODE_ROUND_1:
         global cluster_choice, partition_choice
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str,
         )
@@ -736,7 +734,7 @@ class CONSENSUS_MODE_ROUND_1:
     def RUN(self):
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -778,7 +776,7 @@ class CONSENSUS_MODE_ROUND_2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -896,7 +894,7 @@ class CONSENSUS_MODE_ROUND_2:
         global cluster_choice, partition_choice
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1062,7 +1060,7 @@ class CONSENSUS_MODE_ROUND_2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1112,7 +1110,7 @@ class CONSENSUS_MODE_ROUND_2:
         consensus_MODEL_path = os.path.join(self.output_path,consensus_MODEL_name)
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1137,7 +1135,7 @@ class CONSENSUS_MODE_ROUND_2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1164,7 +1162,7 @@ class CONSENSUS_MODE_ROUND_2:
         consensus_MODEL_path = os.path.join(self.output_path, consensus_MODEL_name)
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1186,7 +1184,7 @@ class CONSENSUS_MODE_ROUND_2:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1225,7 +1223,7 @@ class ANALYSIS_SUIT:
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",
             comment="#",dtype=str
         )
@@ -1285,7 +1283,7 @@ class ANALYSIS_SUIT:
         )
         GROUPS = pd.read_csv(
             self.group_list,
-            names=["particle_file", "group", "nframe"],
+            names=["particle_file", "group", "start", "end", "nframe"],
             delim_whitespace="True",dtype=str,
             comment="#",
         )
@@ -1359,14 +1357,12 @@ class ANALYSIS_SUIT:
 
 note0 = """
 ##########################################################
-CONSENSUS MODE                                           |
-----------------------------------------------------------
 CHOOSE THE MODE:
+----------------------------------------------------------
 
-    1. Prepping and Run BioEM normally
-    2. Prepping and Run BioEM with one model to be chosen as
-    a CONSENSUS model
-    3. Analysis suit
+    1. NORMAL MODE
+    2. CONSENSUS MODE
+    3. ANALYSIS
     4. EXIT NOW
 ----------------------------------------------------------
 ##########################################################

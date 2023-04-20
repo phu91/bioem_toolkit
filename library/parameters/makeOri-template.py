@@ -63,7 +63,7 @@ def quat_calculation(particle_now):
                 string=line.split()
                 # print(string)
                 tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
-    shutil.copy(ANG_tmp_file_path,os.path.join(orientation_path,"ANG_R2_%s"%(particle_now)))
+    shutil.copy(ANG_tmp_file_path,os.path.join(orientation_path,"ANG_R2_%s"%(particle_now+WhenStart)))
     os.remove(tmp_file_path)
     os.remove(tmp_file_2_path)
     os.remove(ANG_tmp_file_path)

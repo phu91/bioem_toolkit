@@ -1329,6 +1329,9 @@ class ANALYSIS_SUIT:
 note0 = """
 ##########################################################
 CHOOSE THE MODE:
+!!!!! WARNING !!!!!
+PLEASE DOUBLE CHECK "Param_BioEM_ABC_template" BEFORE
+GOING BEYOND THIS POINT 
 ----------------------------------------------------------
 
     1. NORMAL MODE

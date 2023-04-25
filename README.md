@@ -30,7 +30,7 @@ git clone git@github.com:flatironinstitute/disBatch.git
 ## Preparation
 
 ### Preparing particles
-Particles must be in a stacked MRCS format for ROUND 1. Individual MRC file for each particles are required for ROUND 2. 
+Particles must be in a stacked MRCS format for ROUND 1. Individual MRC file for each particles are required for ROUND 2. The naming scheme should be `particle_`
 
 #### Suggestion
 Individual particles (`particle_0.mrc`, `particle_1.mrc`, etc.) should be stored in a sub-group directory, such as `particless/0-5k` (from particle 0 to particle 5000), and the stacked MRCS `particles_0-5k.mrcs` should be stored in `particles/`.

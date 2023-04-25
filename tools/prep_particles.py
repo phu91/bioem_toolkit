@@ -8,9 +8,9 @@ import argparse
 if  __name__ == "__main__":
     parser = argparse.ArgumentParser(description="""
     Let us create a user contact.""")
-    parser.add_argument("--input" , help="Name of the MRC stack")
-    parser.add_argument("--opath" , help="Output Path")
-    parser.add_argument("--output", help="Output Name")
+    parser.add_argument("--is" , help="Name of the MRC stack")
+    parser.add_argument("--op" , help="Output Path")
+    parser.add_argument("--osn", help="Output STACKED Name for METHOD 0")
     parser.add_argument("--start" , help="Start Image")
     parser.add_argument("--end"   , help="End Image")
     parser.add_argument("--method", help="Extract as SINGLE (1) or WHOLE stack (0)")

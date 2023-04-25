@@ -6,8 +6,9 @@ import os
 import ray
 from time import time
 
-ray.init()
+ray.init(address="auto")
 assert ray.is_initialized()
+
 
 print('''This cluster consists of
     {} nodes in total

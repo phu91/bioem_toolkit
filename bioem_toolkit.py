@@ -120,10 +120,7 @@ def making_orientations_submission(
 
     Quat_exe = os.path.join("library", "multiple_Quat", "multiply_quat")
     Quat_exe_abs = os.path.abspath(Quat_exe)
-    Grid_file_path = os.path.join("library", "multiple_Quat", "smallGrid_125")
-    Grid_file_path_abs = os.path.abspath(Grid_file_path)
-    # print(makeOri_template_path)
-    shutil.copy(Grid_file_path_abs, "/tmp")
+
     with open(makeOri_template_path, "r+") as file:
         makeOri_file = file.read()
         makeOri_file = makeOri_file.replace("WhatMODEL", model_now)
@@ -131,7 +128,6 @@ def making_orientations_submission(
         makeOri_file = makeOri_file.replace("WherePROB", r1_foo)
         makeOri_file = makeOri_file.replace("WhereOrientations", model_orientation_path)
         makeOri_file = makeOri_file.replace("WhereQUAT", Quat_exe_abs)
-        makeOri_file = makeOri_file.replace("WhereGridFile", Grid_file_path_abs)
         makeOri_file = makeOri_file.replace("WhereTOOLKIT",os.path.abspath(os.path.normpath(__file__ + '/../..')))
         makeOri_file = makeOri_file.replace("WhereWORKDIR2",model_group_path)
         makeOri_file = makeOri_file.replace("WhenStart",startFrame)

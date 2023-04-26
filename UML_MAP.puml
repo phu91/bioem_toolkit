@@ -1,4 +1,0 @@
-@startuml
-
-actor User
-database Database

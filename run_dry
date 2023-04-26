@@ -1,0 +1,1 @@
+python bioem_toolkit.py -mp /mnt/ceph/users/ptang/6-ABC-Transporter/1-PROCESSING/trial2/models -ml MODEL_TEST -gl LIST_TEST  -param library/parameters -pp /mnt/home/ptang/ceph/6-ABC-Transporter/1-PROCESSING/particles -op /mnt/home/ptang/ceph/6-ABC-Transporter/1-PROCESSING/trial2/test_dir_2

@@ -1,0 +1,3 @@
+# ParticleStack GroupName StartFrame EndFrame NumberOfFrame
+particles0-2.mrcs 0-2   0   2   3
+particles3-5.mrcs 3-5   3   5   3

@@ -1,1 +1,7 @@
 run_command
+run
+run_dry
+UML_MAP.puml
+MODEL_TEST
+LIST_TEST
+tmp*

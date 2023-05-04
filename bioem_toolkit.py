@@ -27,14 +27,19 @@ def timer_func(func):
     return wrap_func
 
 
-def choosing_cluster():
-    cluster_choice = input("Do you want to work on CLUSTER? Yes (1) or No (0): \n")
-    if cluster_choice == "1":
+def choosing_cluster(prechoice):
+    if prechoice== 0:
+        cluster_choice = input("Do you want to work on CLUSTER? Yes (1) or No (0): \n")
+        if cluster_choice == "1":
+            partition_choice = input("Please select your PARTITION on SLURM: \n")
+            return partition_choice
+        else:
+            print("\n========== MULTIPLY_QUAT will be done on local machine")
+            return None
+    elif prechoice==1:
         partition_choice = input("Please select your PARTITION on SLURM: \n")
         return partition_choice
-    else:
-        print("\n========== MULTIPLY_QUAT will be done on local machine")
-        return None
+
 
 def counter(baseZero,count):
     return int(baseZero) + count
@@ -299,8 +304,8 @@ class NORMAL_MODE_ROUND1:
         self.output_path = output_path
 
     def PREP(self):
-        global partition_choice
-        partition_choice = choosing_cluster()
+        global partition_choice   #### MAYBE ADD N_NODE
+        partition_choice = choosing_cluster(1)
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -328,7 +333,7 @@ class NORMAL_MODE_ROUND1:
 
                 shutil.copy(os.path.join(mp_v, MODEL + ".txt"), a_model_path)
                 shutil.copy(
-                    param_v + "/Param_BioEM_ABC_template",
+                    param_v + "/Param_BioEM_template",
                     round1_path + "/Param_BioEM_ABC",
                 )
                 shutil.copy(param_v + "/Quat_36864", round1_path)
@@ -346,15 +351,19 @@ class NORMAL_MODE_ROUND1:
                     slurm_file = slurm_file.replace("WhereModel", os.path.join(self.model_path))
                     slurm_file = slurm_file.replace("WhatGroup", GROUP["group"])
                     slurm_file = slurm_file.replace("WhatPartition", partition_choice)
+                    slurm_file = slurm_file.replace("WhereParam", os.path.join(round1_path,"Param_BioEM_ABC"))
+                    slurm_file = slurm_file.replace("WhereQuatern", os.path.join(round1_path,"Quat_36864") )
 
                     with open(slurm_file_out_path, "w+") as outfile:
                         outfile.write(slurm_file)
-                    outfile.close()
-                file.close()
+                    os.chmod(slurm_file_out_path, stat.S_IRWXU)
 
     def RUN(self):
         # print('running!')
-        # partition_choice = choosing_cluster()
+        partition_choice = choosing_cluster(1)
+
+        centraltask_path = os.path.join(self.output_path,"0-CentralTask")
+        os.makedirs(centraltask_path,exist_ok=True)
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
@@ -363,24 +372,42 @@ class NORMAL_MODE_ROUND1:
             delim_whitespace="True",
             comment="#",dtype=str
         )
-        for MODEL in MODELS:
-            MODEL = MODEL.strip()
-            if MODEL[0] == "#":
-                print("%s is skipped." % (MODEL[1:]))
-                continue
-            a_model_path = os.path.join(op_v, MODEL)
-            round1_path = os.path.join(a_model_path, "round1")
-            for ind, GROUP in GROUPS.iterrows():
-                r1_group_path = os.path.join(round1_path, GROUP["group"])
-                cwd = os.getcwd()
-                os.chdir(r1_group_path)
-                slurm_file_out_path = "slurm-r1-rusty.sh"
+        centraltask_filename ='CENTRAL_TASK_R1'
 
-                os.chmod(slurm_file_out_path, stat.S_IRWXU)
-                # print(slurm_file_out_path)
-                sbatch_cmd = ('sbatch %s'%(slurm_file_out_path))
-                subprocess.run(str(sbatch_cmd), shell=True, check=True)
-                os.chdir(cwd)
+        with open(centraltask_path+"/CENTRAL_TASK_R1","w+") as ct:
+            for MODEL in MODELS:
+                MODEL = MODEL.strip()
+                if MODEL[0] == "#":
+                    print("%s is skipped." % (MODEL[1:]))
+                    continue
+                a_model_path = os.path.join(op_v, MODEL)
+                round1_path = os.path.join(a_model_path, "round1")
+                for ind, GROUP in GROUPS.iterrows():
+                    r1_group_path = os.path.join(round1_path, GROUP["group"])
+                    r1_slurm_file_path = os.path.join(r1_group_path,"slurm-r1-rusty.sh")
+                    r1_slurm_file_abs = os.path.abspath(r1_slurm_file_path)
+                    ct.write("%s &>> REPORT_CENTRAL_TASK_R1\n"%(r1_slurm_file_abs))
+
+        cwd = os.getcwd()
+        os.chdir(centraltask_path)
+        sbatch_cmd = ('sbatch -p %s -J %s disBatch %s --force-resume -t 125' % (
+            partition_choice,
+            MODEL,
+            centraltask_filename,
+        )
+        )
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(cwd)
+
+                # cwd = os.getcwd()
+                # os.chdir(r1_group_path)
+                # slurm_file_out_path = "slurm-r1-rusty.sh"
+
+                # os.chmod(slurm_file_out_path, stat.S_IRWXU)
+                # # print(slurm_file_out_path)
+                # sbatch_cmd = ('sbatch %s'%(slurm_file_out_path))
+                # subprocess.run(str(sbatch_cmd), shell=True, check=True)
+                # os.chdir(cwd)
 
 
 class NORMAL_MODE_ROUND2:
@@ -396,7 +423,7 @@ class NORMAL_MODE_ROUND2:
 
     def PREP(self):
         global cluster_choice, partition_choice
-        partition_choice = choosing_cluster()
+        partition_choice = choosing_cluster(0)
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -440,10 +467,10 @@ class NORMAL_MODE_ROUND2:
 
                     if os.path.basename(group_param_path) == "tmp_files":
                         shutil.copy(
-                        param_v + "/Param_BioEM_ABC_template", group_param_path
+                        param_v + "/Param_BioEM_template", group_param_path
                         )
                         param_bio_template_path = os.path.join(
-                        group_param_path, "Param_BioEM_ABC_template"
+                        group_param_path, "Param_BioEM_template"
                         )
                         shutil.copy(
                         r1_group_path + "/Output_Probabilities",
@@ -538,7 +565,7 @@ class NORMAL_MODE_ROUND2:
 
 
     def RUN(self):
-        partition_choice = choosing_cluster()
+        partition_choice = choosing_cluster(0)
         try:
             subprocess.check_output(
                 ["disBatch", "--help"], stderr=subprocess.STDOUT
@@ -574,6 +601,7 @@ class NORMAL_MODE_ROUND2:
                     # print(current_dir,task_path)
                     os.chdir(task_path)
                     # print(os.getcwd())
+                    sbatch -n 2 -c 125 -p ccm -J test disBatch CENTRAL_TASK_R1
                     sbatch_cmd = ('sbatch -p %s -J %s -t 125 disBatch %s' % (
                         partition_choice,
                         MODEL,
@@ -682,7 +710,7 @@ class CONSENSUS_MODE_ROUND_1:
             os.makedirs(r1_group_path, exist_ok="True")
             shutil.copy(os.path.join(mp_v, MODEL + ".txt"), consensus_MODEL_path)
             shutil.copy(
-                param_v + "/Param_BioEM_ABC_template", round1_path + "/Param_BioEM_ABC"
+                param_v + "/Param_BioEM_template", round1_path + "/Param_BioEM_ABC"
             )
             shutil.copy(param_v + "/Quat_36864", round1_path)
             with open(param_v + "/slurm-r1-template.sh", "r+") as file:
@@ -909,7 +937,7 @@ class CONSENSUS_MODE_ROUND_2:
                 )
 
                 if os.path.basename(group_param_path) == "tmp_files":
-                    # self.param_path+"Param_BioEM_ABC_template"
+                    # self.param_path+"Param_BioEM_template"
                     param_bio_R1_path = os.path.join(
                         consensus_round1_path, "Param_BioEM_ABC"
                     )
@@ -1330,7 +1358,7 @@ note0 = """
 ##########################################################
 CHOOSE THE MODE:
 !!!!! WARNING !!!!!
-PLEASE DOUBLE CHECK "Param_BioEM_ABC_template" BEFORE
+PLEASE DOUBLE CHECK "Param_BioEM_template" BEFORE
 GOING BEYOND THIS POINT 
 ----------------------------------------------------------
 

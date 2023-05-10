@@ -1,12 +1,13 @@
 set start 0
-set end 20 
 
 mol new MODEL0.PDB
-mol addfile trajectory.crd first $start last $end waitfor all
+mol addfile trajectory.crd first $start last -1 step 20 waitfor all
 
-for {set i 1} {$i <= $end} {incr i} {
-	set all [atomselect top all]
-	$all writepdb model_$i.pdb
+set nframe [molinfo top get numframes]	 
+
+for {set i 1} {$i <= $nframe} {incr i} {
+	set all [atomselect top all frame $i]
+	$all writepdb [format "md_%02d.pdb" $i]
 }
 
 exit

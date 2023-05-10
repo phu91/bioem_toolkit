@@ -26,4 +26,4 @@ export GPU=0
 export BIOEM_DEBUG_OUTPUT=0
 export BIOEM_ALGO=2
 
-mpirun --map-by socket:pe=$OMP_NUM_THREADS -np 16 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM --Modelfile WhereModel/WhatModel.txt --Particlesfile WhereParticle --ReadMRC --Inputfile WhereParam --ReadOrientation WhereQuatern
+mpirun --map-by socket:pe=$OMP_NUM_THREADS -np 16 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM --Modelfile WhereModel/WhatModel.txt --Particlesfile WhereParticle --ReadMRC --Inputfile WhereParam --ReadOrientation WhereQuatern --OutputFile WhereOutputStored

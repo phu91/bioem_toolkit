@@ -59,11 +59,16 @@ class NORMAL_MODE_ROUND1:
                 os.makedirs(r1_group_path, exist_ok='True')
 
                 shutil.copy(os.path.join(mp_v, MODEL + ".txt"), a_model_path)
-                shutil.copy(
-                    param_v + "/Param_BioEM_template",
-                    round1_path + "/Param_BioEM_ABC",
-                )
                 shutil.copy(param_v + "/Quat_36864", round1_path)
+
+                with open(param_v + "/Param_BioEM_template", "r+") as file:
+                    param_file = file.read()
+                    param_file_out_path = str(round1_path) + "/Param_BioEM_%s"%(GROUP['group'])
+                    # print(param_file_out_path)
+                    param_file = param_file.replace("WhereRound1AngleFile", r1_group_path+"/angle_output_probabilities.txt")
+                    with open(param_file_out_path, "w+") as outfile:
+                        outfile.write(param_file)
+                    os.chmod(param_file_out_path, stat.S_IRWXU)
 
                 with open(param_v + "/slurm-r1-template.sh", "r+") as file:
                     slurm_file = file.read()
@@ -78,8 +83,10 @@ class NORMAL_MODE_ROUND1:
                     slurm_file = slurm_file.replace("WhereModel", os.path.join(self.model_path))
                     slurm_file = slurm_file.replace("WhatGroup", GROUP["group"])
                     slurm_file = slurm_file.replace("WhatPartition", partition_choice)
-                    slurm_file = slurm_file.replace("WhereParam", os.path.join(round1_path,"Param_BioEM_ABC"))
+                    slurm_file = slurm_file.replace("WhereParam", os.path.join(round1_path,"Param_BioEM_%s"%(GROUP['group'])))
                     slurm_file = slurm_file.replace("WhereQuatern", os.path.join(round1_path,"Quat_36864") )
+                    slurm_file = slurm_file.replace("WhereOutputStored", os.path.join(r1_group_path,"Output_Probabilities") )
+
 
                     with open(slurm_file_out_path, "w+") as outfile:
                         outfile.write(slurm_file)

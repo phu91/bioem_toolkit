@@ -5,18 +5,15 @@ import subprocess
 import pandas as pd
 import mrcfile as mrc
 import numpy as np
-
 # adding library to the system path
-sys.path.insert(0, "library/parameters")
 # from multiprocessing import Process
 
 #TODO refactor code so that consensus is just a type of job. 
 # TODO submit make orientation for consensus job. 
 # TODO make grid multiplication a part of round 1. 
 
-sys.path.insert(0, "bioem_toolkit/'")
-import helper_functions
-
+sys.path.insert(0, "/mnt/ceph/users/ptang/6-ABC-Transporter/1-PROCESSING/trial2/bioem_toolkit/helper_functions.py")
+from helper_functions import *
 
 
 #################################### NORMAL CLASSES
@@ -116,13 +113,14 @@ class NORMAL_MODE_ROUND1:
                     r1_group_path = os.path.join(round1_path, GROUP["group"])
                     r1_slurm_file_path = os.path.join(r1_group_path,"slurm-r1-rusty.sh")
                     r1_slurm_file_abs = os.path.abspath(r1_slurm_file_path)
-                    ct.write("%s &>> REPORT_CENTRAL_TASK_R1\n"%(r1_slurm_file_abs))
+                    ct.write("%s &> REPORT_R1_%s_%s\n"%(r1_slurm_file_abs,MODEL,GROUP['group']))
 
         cwd = os.getcwd()
         os.chdir(centraltask_path)
-        sbatch_cmd = ('sbatch -p %s -J %s disBatch %s --force-resume -t 125' % (
+        n_node = input("How many nodes to run?\n")
+        sbatch_cmd = ('sbatch -n %s -c 125 -p %s -J TEST disBatch %s' % (
+            n_node,
             partition_choice,
-            MODEL,
             centraltask_filename,
         )
         )
@@ -331,8 +329,10 @@ class NORMAL_MODE_ROUND2:
                     # print(current_dir,task_path)
                     os.chdir(task_path)
                     # print(os.getcwd())
-                    sbatch -n 2 -c 125 -p ccm -J test disBatch CENTRAL_TASK_R1
-                    sbatch_cmd = ('sbatch -p %s -J %s -t 125 disBatch %s' % (
+                    # sbatch -n 2 -c 125 -p ccm -J test disBatch CENTRAL_TASK_R1
+                    n_node = input("How many nodes to run?\n")
+                    sbatch_cmd = ('sbatch -n %s -c 125 -p %s -J %s disBatch %s' % (
+                        n_nodes,
                         partition_choice,
                         MODEL,
                         task_file_name,

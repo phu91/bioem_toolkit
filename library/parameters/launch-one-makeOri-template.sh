@@ -10,7 +10,7 @@ ${GIVEN_NODE}
 #SBATCH --nodes=${NUM_NODES}
 #SBATCH --exclusive
 ### Give all resources to a single Ray task, ray can manage the resources internally
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=4
 #SBATCH --gpus-per-task=${NUM_GPUS_PER_NODE}
 
 # Load modules or your own conda environment here

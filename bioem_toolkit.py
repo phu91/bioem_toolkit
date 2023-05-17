@@ -5,6 +5,7 @@ import subprocess
 import pandas as pd
 import mrcfile as mrc
 import numpy as np
+# import ray
 # adding library to the system path
 # from multiprocessing import Process
 
@@ -12,7 +13,7 @@ import numpy as np
 # TODO submit make orientation for consensus job. 
 # TODO make grid multiplication a part of round 1. 
 
-sys.path.insert(0, "/mnt/ceph/users/ptang/6-ABC-Transporter/1-PROCESSING/trial2/bioem_toolkit/helper_functions.py")
+sys.path.insert(0, "helper_functions.py")
 from helper_functions import *
 
 
@@ -125,7 +126,7 @@ class NORMAL_MODE_ROUND1:
         cwd = os.getcwd()
         os.chdir(centraltask_path)
         n_node = input("How many nodes to run?\n")
-        sbatch_cmd = ('sbatch -n %s -c 125 -p %s -J TEST disBatch %s' % (
+        sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J R1 disBatch %s' % (
             n_node,
             partition_choice,
             centraltask_filename,
@@ -159,6 +160,17 @@ class NORMAL_MODE_ROUND2:
     def PREP(self):
         global cluster_choice, partition_choice
         partition_choice = choosing_cluster(0)
+        if partition_choice is not None:
+            n_node = input("How many nodes to run?\n")
+            n_cpu = input("Number of CPUs on CLUSTER: \n")
+        else:   ### LOCAL MACHINE
+            n_node = "1"
+            n_cpu = "32"
+            
+        centraltask_path = os.path.join(op_v,"1-QMTask")
+        if os.path.isdir(centraltask_path) is True:
+            shutil.rmtree(centraltask_path)
+            
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -228,7 +240,7 @@ class NORMAL_MODE_ROUND2:
                             r1_group_path + "/angle_output_probabilities.txt",
                             r1_prob,
                         )
-
+                        
                         making_orientations_submission (
                             libraryParmPath=self.param_path,
                             r1_foo=r1_prob,
@@ -237,10 +249,11 @@ class NORMAL_MODE_ROUND2:
                             model_tmp_path=group_param_path,
                             model_group_path=r2_group_path,
                             partition_choice=partition_choice,
+                            n_node=n_node,
+                            n_cpu=n_cpu,
                             path_to_output=self.output_path,
                             startFrame=GROUP['start']
                         )
-
 
                     elif os.path.basename(group_param_path) == "tasks":
                     # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
@@ -297,7 +310,20 @@ class NORMAL_MODE_ROUND2:
                         print(
                             "\n========== Done with creating Task File for %s" % (MODEL)
                         )
+        
+        centraltask_filename = "CENTRAL_TASK_R2_QM"
 
+        cwd = os.getcwd()
+        os.chdir(centraltask_path)
+        # n_core = n_node*128
+        sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J QM disBatch %s' % (
+            n_node,
+            partition_choice,
+            centraltask_filename,
+        )
+        )
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(cwd)
 
     def RUN(self):
         partition_choice = choosing_cluster(0)
@@ -336,9 +362,9 @@ class NORMAL_MODE_ROUND2:
                     # print(current_dir,task_path)
                     os.chdir(task_path)
                     # print(os.getcwd())
-                    # sbatch -n 2 -c 125 -p ccm -J test disBatch CENTRAL_TASK_R1
+                    # sbatch -n 2 -c 128 -p ccm -J test disBatch CENTRAL_TASK_R1
                     n_node = input("How many nodes to run?\n")
-                    sbatch_cmd = ('sbatch -n %s -c 125 -p %s -J %s disBatch %s' % (
+                    sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J %s disBatch %s' % (
                         n_nodes,
                         partition_choice,
                         MODEL,
@@ -817,7 +843,7 @@ class CONSENSUS_MODE_ROUND_2:
                 current_directory = os.getcwd()
                 os.chdir(task_path)
 
-                sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
+                sbatch_cmd = "sbatch -p ccb -J %s -t 128 disBatch %s" % (
                     MODEL,
                     task_file_name,
                 )
@@ -857,7 +883,7 @@ class CONSENSUS_MODE_ROUND_2:
             task_path = os.path.join(r2_group_path, "tasks")
             task_file_name = "task_%s_%s" % (consensus_MODEL_name, GROUP["group"])
             os.chdir(task_path)
-            sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
+            sbatch_cmd = "sbatch -p ccb -J %s -t 128 disBatch %s" % (
                 consensus_MODEL_name,
                 task_file_name,
             )

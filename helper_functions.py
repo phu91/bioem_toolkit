@@ -75,6 +75,7 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
                         line[3] = 1
                     elif line[0] == "SIGMA_PRIOR_DEFOCUS":
                         line[1] = 0.3
+
                     string = "  ".join(map(str, line))
                     file2.write(string + "\n")
     # os.remove("tmp_prob")

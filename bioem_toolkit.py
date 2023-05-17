@@ -216,9 +216,17 @@ class NORMAL_MODE_ROUND2:
                         shutil.copy(
                         param_v + "/Param_BioEM_template", group_param_path
                         )
+
                         param_bio_template_path = os.path.join(
                         group_param_path, "Param_BioEM_template"
                         )
+                        with open(param_bio_template_path, "r+") as file:
+                            param_file = file.read()
+                            param_file = param_file.replace("WhereRound1AngleFile", r2_group_path+"/tmp_files/angle_output_probabilities.txt")
+                            with open(param_bio_template_path, "w+") as outfile:
+                                outfile.write(param_file)
+                        #     os.chmod(param_file_out_path, stat.S_IRWXU)
+
                         shutil.copy(
                         r1_group_path + "/Output_Probabilities",
                         group_param_path + "/Output_Probabilities-R1",
@@ -233,6 +241,7 @@ class NORMAL_MODE_ROUND2:
                         param_bio_template_path,
                         GROUP
                         )
+
                         print("\n========== Done with PARAMETER FILES for %s" % (MODEL))
 
                         r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
@@ -254,9 +263,15 @@ class NORMAL_MODE_ROUND2:
                             path_to_output=self.output_path,
                             startFrame=GROUP['start']
                         )
-
+                    
                     elif os.path.basename(group_param_path) == "tasks":
                     # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
+                        output_path = os.path.join(group_param_path,"outputs")
+                        orientations_path = os.path.join(group_param_path,"orientations")
+                        parameters_path = os.path.join(group_param_path,"parameters")
+                        output_path_abs = os.path.abspath(output_path)
+                        orientations_path_abs = os.path.abspath(orientations_path)
+                        parameters_path_abs = os.path.abspath(parameters_path)
                         shutil.copy(
                             param_v + "/launch-one-NONCONSENSUS-template.sh", group_param_path
                         )
@@ -282,8 +297,20 @@ class NORMAL_MODE_ROUND2:
                                                 self.particle_path
                                             )
                                         elif line[1] == "WhereModel=WhereModel":
-                                            line[1] = "WhereModel=%s" % (
+                                            line[1] = "WhereModel=%s.txt" % (
                                                 os.path.abspath(self.model_path)
+                                            )
+                                        elif line[1] =="WhereOutput=WhereOutput":
+                                            line[1] = "WhereOutput=%s" % (
+                                                output_path_abs
+                                            )
+                                        elif line[1] =="WhereOrientation=WhereOrientation":
+                                            line[1] = "WhereOrientation=%s" % (
+                                                orientations_path_abs
+                                            )
+                                        elif line[1] =="WhereParm=WhereParm":
+                                            line[1] = "WhereParm=%s" % (
+                                                parameters_path_abs
                                             )
                                     # print(*line)
                                     string = "  ".join(map(str, line))
@@ -292,25 +319,39 @@ class NORMAL_MODE_ROUND2:
                         launchIn.close()
                         os.chmod(group_param_path + "/launch-one.sh", stat.S_IRWXU)
                         # os.remove(launch_one_path)
+                        launch_one_group_path = os.path.join(group_param_path,"launch-one.sh")
+                        launch_one_group_path_abs = os.path.abspath(launch_one_group_path)
 
-                        task_path = os.path.join(
-                            group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
-                        )
+        centralTask_R2_path = os.path.join(self.output_path,"2-CentralTask-R2")
+        check_path = os.path.isdir(centralTask_R2_path)
+        if check_path is True:
+            overwrite = input("\n========== Overwrite directory? Y/N\n")
+            if overwrite =='Y' or overwrite =='y':
+                shutil.rmtree(centralTask_R2_path)
+                os.makedirs(centralTask_R2_path,exist_ok = True)
+            else:
+                print("\n========== 2-CentralTask-R2 IS NOT UPDATED!!\n")
+        else:
+            os.makedirs(centralTask_R2_path,exist_ok = True)
 
-                        # print(start,end,GROUP['nframe'])
-                            # print(i)
-                        with open(task_path, "w+") as task:
-                            for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
-                                # print(i)
-                                launch_one_command = (
-                                    "./launch-one.sh %s %s %s.txt  &>> out.log"
-                                    % (i, GROUP["group"], MODEL)
-                                )
-                                task.write(launch_one_command + "\n")
-                        print(
-                            "\n========== Done with creating Task File for %s" % (MODEL)
-                        )
-        
+                # task_path = os.path.join(
+                #     group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
+                # )
+        task_path = os.path.join(
+            centralTask_R2_path,"CENTRAL_TASK_R2_LAUNCH"
+        )
+        with open(task_path, "a+") as task:
+            for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
+                # print(i)
+                launch_one_command = (
+                    "%s %s %s %s &>> REPORT_R2_%s_%s" ################################
+                    % (launch_one_group_path_abs,i, GROUP["group"], MODEL,GROUP["group"],MODEL)
+                )
+                task.write(launch_one_command + "\n")
+        print(
+            "\n========== Done with creating Task File for %s" % (MODEL)
+        )
+
         centraltask_filename = "CENTRAL_TASK_R2_QM"
 
         cwd = os.getcwd()
@@ -322,10 +363,13 @@ class NORMAL_MODE_ROUND2:
             centraltask_filename,
         )
         )
-        subprocess.run(sbatch_cmd,shell=True,check=True)
-        os.chdir(cwd)
+        # subprocess.run(sbatch_cmd,shell=True,check=True)
+        # os.chdir(cwd)
 
     def RUN(self):
+        central_task_r2_path = os.path.join(self.output_path,"2-CentralTask-R2")
+        os.makedirs(central_task_r2_path, exist_ok=True)
+
         partition_choice = choosing_cluster(0)
         try:
             subprocess.check_output(
@@ -363,9 +407,9 @@ class NORMAL_MODE_ROUND2:
                     os.chdir(task_path)
                     # print(os.getcwd())
                     # sbatch -n 2 -c 128 -p ccm -J test disBatch CENTRAL_TASK_R1
-                    n_node = input("How many nodes to run?\n")
+                    n_node = input("How many nodes to request for disBatch?\n")
                     sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J %s disBatch %s' % (
-                        n_nodes,
+                        n_node,
                         partition_choice,
                         MODEL,
                         task_file_name,

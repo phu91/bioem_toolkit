@@ -125,7 +125,7 @@ class NORMAL_MODE_ROUND1:
 
         cwd = os.getcwd()
         os.chdir(centraltask_path)
-        n_node = input("How many nodes to run?\n")
+        n_node = input("How many nodes to request for disBatch?\n")
         sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J R1 disBatch %s' % (
             n_node,
             partition_choice,
@@ -161,8 +161,8 @@ class NORMAL_MODE_ROUND2:
         global cluster_choice, partition_choice
         partition_choice = choosing_cluster(0)
         if partition_choice is not None:
-            n_node = input("How many nodes to run?\n")
-            n_cpu = input("Number of CPUs on CLUSTER: \n")
+            n_node = input("How many nodes to request for disBatch?\n")
+            n_cpu = int(n_node)*128
         else:   ### LOCAL MACHINE
             n_node = "1"
             n_cpu = "32"
@@ -182,6 +182,22 @@ class NORMAL_MODE_ROUND2:
         )
         # print(GROUPS)
         # Strips the newline character
+        centralTask_R2_path = os.path.join(self.output_path,"2-CentralTask-R2")
+        check_path = os.path.isdir(centralTask_R2_path)
+        if check_path is True:
+            overwrite = input("\n========== Overwrite %s? Y/N\n"%(centralTask_R2_path))
+            if overwrite =='Y' or overwrite =='y':
+                shutil.rmtree(centralTask_R2_path)
+                os.makedirs(centralTask_R2_path,exist_ok = True)
+            else:
+                print("\n========== 2-CentralTask-R2 IS NOT UPDATED!!\n")
+        else:
+            os.makedirs(centralTask_R2_path,exist_ok = True)
+
+        task_path = os.path.join(
+            centralTask_R2_path,"CENTRAL_TASK_R2_LAUNCH"
+        )
+
         for MODEL in MODELS:
             MODEL = MODEL.strip()
             if MODEL[0] == "#":
@@ -205,6 +221,13 @@ class NORMAL_MODE_ROUND2:
                     "/outputs",
                     "/tmp_files",
                 ]
+                output_path = os.path.join(r2_group_path,"outputs")
+                orientations_path = os.path.join(r2_group_path,"orientations")
+                parameters_path = os.path.join(r2_group_path,"parameters")
+
+                output_path_abs = os.path.abspath(output_path)
+                orientations_path_abs = os.path.abspath(orientations_path)
+                parameters_path_abs = os.path.abspath(parameters_path)
 
                 for sub_dir in range(len(subdir_list)):
                     os.makedirs(r2_group_path + subdir_list[sub_dir], exist_ok="True")
@@ -221,11 +244,14 @@ class NORMAL_MODE_ROUND2:
                         group_param_path, "Param_BioEM_template"
                         )
                         with open(param_bio_template_path, "r+") as file:
-                            param_file = file.read()
-                            param_file = param_file.replace("WhereRound1AngleFile", r2_group_path+"/tmp_files/angle_output_probabilities.txt")
+                            param_file = file.readlines()
+                            param_file.remove("ANG_PROB_FILE WhereRound1AngleFile\n")   ### FOR SPEEDING UP SINCE R2 DOES NOT NEED TO WRITE OUT BEST ANGLES
+                            param_file.remove("WRITE_PROB_ANGLES 300\n")
+                            # param_file = param_file.replace("WhereRound1AngleFile", r2_group_path+"/tmp_files/angle_output_probabilities.txt")
+                            string = "  ".join(map(str, param_file))
                             with open(param_bio_template_path, "w+") as outfile:
-                                outfile.write(param_file)
-                        #     os.chmod(param_file_out_path, stat.S_IRWXU)
+                                outfile.write(str(string))
+                        os.chmod(param_bio_template_path, stat.S_IRWXU)
 
                         shutil.copy(
                         r1_group_path + "/Output_Probabilities",
@@ -263,15 +289,9 @@ class NORMAL_MODE_ROUND2:
                             path_to_output=self.output_path,
                             startFrame=GROUP['start']
                         )
-                    
+
                     elif os.path.basename(group_param_path) == "tasks":
                     # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
-                        output_path = os.path.join(group_param_path,"outputs")
-                        orientations_path = os.path.join(group_param_path,"orientations")
-                        parameters_path = os.path.join(group_param_path,"parameters")
-                        output_path_abs = os.path.abspath(output_path)
-                        orientations_path_abs = os.path.abspath(orientations_path)
-                        parameters_path_abs = os.path.abspath(parameters_path)
                         shutil.copy(
                             param_v + "/launch-one-NONCONSENSUS-template.sh", group_param_path
                         )
@@ -297,7 +317,7 @@ class NORMAL_MODE_ROUND2:
                                                 self.particle_path
                                             )
                                         elif line[1] == "WhereModel=WhereModel":
-                                            line[1] = "WhereModel=%s.txt" % (
+                                            line[1] = "WhereModel=%s" % (
                                                 os.path.abspath(self.model_path)
                                             )
                                         elif line[1] =="WhereOutput=WhereOutput":
@@ -322,49 +342,33 @@ class NORMAL_MODE_ROUND2:
                         launch_one_group_path = os.path.join(group_param_path,"launch-one.sh")
                         launch_one_group_path_abs = os.path.abspath(launch_one_group_path)
 
-        centralTask_R2_path = os.path.join(self.output_path,"2-CentralTask-R2")
-        check_path = os.path.isdir(centralTask_R2_path)
-        if check_path is True:
-            overwrite = input("\n========== Overwrite directory? Y/N\n")
-            if overwrite =='Y' or overwrite =='y':
-                shutil.rmtree(centralTask_R2_path)
-                os.makedirs(centralTask_R2_path,exist_ok = True)
-            else:
-                print("\n========== 2-CentralTask-R2 IS NOT UPDATED!!\n")
-        else:
-            os.makedirs(centralTask_R2_path,exist_ok = True)
-
-                # task_path = os.path.join(
-                #     group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
-                # )
-        task_path = os.path.join(
-            centralTask_R2_path,"CENTRAL_TASK_R2_LAUNCH"
-        )
-        with open(task_path, "a+") as task:
-            for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
-                # print(i)
-                launch_one_command = (
-                    "%s %s %s %s &>> REPORT_R2_%s_%s" ################################
-                    % (launch_one_group_path_abs,i, GROUP["group"], MODEL,GROUP["group"],MODEL)
+                with open(task_path, "a+") as task:
+                    for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
+                        # print(i)
+                        launch_one_command = (
+                            "%s %s %s %s &>> REPORT_R2_%s_%s" ################################
+                            % (launch_one_group_path_abs,i, GROUP["group"], MODEL,GROUP["group"],MODEL)
+                        )
+                        task.write(launch_one_command + "\n")
+                print(
+                    "\n========== Done with creating Task File for %s" % (MODEL)
                 )
-                task.write(launch_one_command + "\n")
-        print(
-            "\n========== Done with creating Task File for %s" % (MODEL)
-        )
 
         centraltask_filename = "CENTRAL_TASK_R2_QM"
 
         cwd = os.getcwd()
         os.chdir(centraltask_path)
         # n_core = n_node*128
-        sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J QM disBatch %s' % (
+        n_cpu ="128"
+        sbatch_cmd = ('sbatch -n %s -c %s -p %s -J QM disBatch %s' % (
             n_node,
+            n_cpu,
             partition_choice,
             centraltask_filename,
         )
         )
-        # subprocess.run(sbatch_cmd,shell=True,check=True)
-        # os.chdir(cwd)
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(cwd)
 
     def RUN(self):
         central_task_r2_path = os.path.join(self.output_path,"2-CentralTask-R2")
@@ -380,43 +384,43 @@ class NORMAL_MODE_ROUND2:
             print(
                 "\nYou need to load disBatch to launch ROUND 2. PROGRAM TERMINATED!!!\n"
             )
-        else:
-            MODELS_LIST = open(self.model_list)
-            MODELS = MODELS_LIST.readlines()
-            GROUPS = pd.read_csv(
-                self.group_list,
-                names=["particle_file", "group", "start", "end", "nframe"],
-                delim_whitespace="True",
-                comment="#",
-            )
-            for MODEL in MODELS:
-                MODEL = MODEL.strip()
-                if MODEL[0] == "#":
-                    print("========== %s is skipped." % (MODEL[1:]))
-                    continue
-                a_model_path = os.path.join(op_v, MODEL)
-                round2_path = os.path.join(a_model_path, "round2")
-                for ind, GROUP in GROUPS.iterrows():
-                    r2_group_path = os.path.join(round2_path, GROUP["group"])
-                    task_path = os.path.join(r2_group_path, "tasks")
-                    task_file_name = "task_%s_%s" % (MODEL, GROUP["group"])
-                    task_file_path = os.path.join(task_path,task_file_name)
+        # else:
+            # MODELS_LIST = open(self.model_list)
+            # MODELS = MODELS_LIST.readlines()
+            # GROUPS = pd.read_csv(
+            #     self.group_list,
+            #     names=["particle_file", "group", "start", "end", "nframe"],
+            #     delim_whitespace="True",
+            #     comment="#",
+            # )
+            # for MODEL in MODELS:
+            #     MODEL = MODEL.strip()
+            #     if MODEL[0] == "#":
+            #         print("========== %s is skipped." % (MODEL[1:]))
+            #         continue
+            #     a_model_path = os.path.join(op_v, MODEL)
+            #     round2_path = os.path.join(a_model_path, "round2")
+            #     for ind, GROUP in GROUPS.iterrows():
+        centraltask_r2_path = os.path.join(self.output_path, "2-CentralTask-R2")
+        centraltask_r2_file_path = os.path.join(centraltask_r2_path,"CENTRAL_TASK_R2_LAUNCH")
 
-                    current_dir = os.getcwd()
-                    # print(current_dir,task_path)
-                    os.chdir(task_path)
-                    # print(os.getcwd())
-                    # sbatch -n 2 -c 128 -p ccm -J test disBatch CENTRAL_TASK_R1
-                    n_node = input("How many nodes to request for disBatch?\n")
-                    sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J %s disBatch %s' % (
-                        n_node,
-                        partition_choice,
-                        MODEL,
-                        task_file_name,
-                    )
-                    )
-                    subprocess.run(sbatch_cmd,shell=True,check=True)
-                    os.chdir(current_dir)
+        ########### THIS NEED TO MOVE OUTOF THE LOOP
+        current_dir = os.getcwd()
+        # print(current_dir,task_path)
+        os.chdir(centraltask_r2_path)
+        # print(os.getcwd())
+        # sbatch -n 2 -c 128 -p ccm -J test disBatch CENTRAL_TASK_R1
+        n_node = input("How many nodes to request for disBatch?\n")
+        n_cpu ="128"
+        sbatch_cmd = ('sbatch -n %s -c %s -p %s -J R2 disBatch %s' % (
+            n_node,
+            n_cpu,
+            partition_choice,
+            centraltask_r2_file_path,
+        )
+        )
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(current_dir)
 
     def CLEAN(self):
         delete_choice = input(

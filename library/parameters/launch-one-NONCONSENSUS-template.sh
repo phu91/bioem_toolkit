@@ -18,4 +18,4 @@ export WhereProject=WhereProject
 export WhereOrientation=WhereOrientation
 export WhereParm=WhereParm
 
-mpirun --bind-to none -np 1 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM  --Modelfile ${WhereModel}/${mod}  --Particlesfile ${WhereParticles}/${gname}/particle_${pnum}.mrc --ReadMRC --ReadOrientation ${WhereOrientation}/ANG_R2_${pnum} --Inputfile ${WhereParm}/Parm_${pnum} --OutputFile ${WhereOutput}/out-$pnum
+mpirun --bind-to none -np 1 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM  --Modelfile ${WhereModel}/${mod}.txt  --Particlesfile ${WhereParticles}/${gname}/particle_${pnum}.mrc --ReadMRC --ReadOrientation ${WhereOrientation}/ANG_R2_${pnum} --Inputfile ${WhereParm}/Parm_${pnum} --OutputFile ${WhereOutput}/out-$pnum

@@ -78,7 +78,7 @@ def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
 
                     string = "  ".join(map(str, line))
                     file2.write(string + "\n")
-    # os.remove("tmp_prob")
+    os.remove("tmp_prob")
 
 def making_orientations_submission(
     libraryParmPath,
@@ -138,7 +138,7 @@ def making_orientations_submission(
         makeOri_file = makeOri_file.replace("WhereTOOLKIT",os.path.abspath(os.path.normpath(__file__ + '/../..')))
         makeOri_file = makeOri_file.replace("WhereWORKDIR2",model_group_path)
         makeOri_file = makeOri_file.replace("WhenStart",startFrame)
-        makeOri_file = makeOri_file.replace("CPUCOUNT",n_cpu)
+        makeOri_file = makeOri_file.replace("CPUCOUNT",str(n_cpu))
         makeOri_file = makeOri_file.replace("NNODE",n_node)
 
         with open(makeOri_model_tmp_file_path, "w+") as outfile:
@@ -173,73 +173,6 @@ def making_orientations_submission(
             # print(launch_one_command)
             task.write(launch_one_command + "\n")
 
-
-        # cwd = os.getcwd()
-        # os.chdir(launchOri_workingdir)
-        # sbatch_cmd = ('sbatch -n %s -c %s -p %s -J %s disBatch %s' % (
-        #     n_node,
-        #     n_cpu,
-        #     partition_choice,
-        #     model_now,
-        #     task_path,
-        # )
-        # )
-        # subprocess.run(sbatch_cmd,shell=True,check=True)
-        # os.chdir(cwd)
-    
-    
-    # if partition_choice is not None:
-    #     making_ray_slurm_script_wordir_file_path_abs = os.path.abspath(
-    #         making_ray_slurm_script_wordir_file_path
-    #     )
-    #     with open(making_ray_slurm_script_wordir_file_path_abs, "r+") as file:
-    #         make_slurm_launchOne_file = file.read()
-    #         make_slurm_launchOne_file = make_slurm_launchOne_file.replace(
-    #             "WhereLaunchOne", launchOri_workdir_file_path
-    #         )
-    #         with open(making_ray_slurm_script_wordir_file_path_abs, "w+") as outfile:
-    #             outfile.write(make_slurm_launchOne_file)
-
-        # os.chmod(launchOri_workingdir + "/launch-one-ori.sh", stat.S_IRWXU)
-        # return launchOri_workingdir
-
-        # task_path = os.path.join(
-        #     launchOri_workingdir, "CENTRAL_TASK_R2_QM"
-        # )
-        # model_tmp_path = os.path.join(
-        #     path_to_output, model_now, "round2", group_now, "tmp_files"
-        # )
-
-        # check_file = os.path.isfile(task_path)
-        # if check_file is True:
-        #     os.remove(task_path)
-
-        # with open(task_path, "a+") as task:
-        #     launch_one_command = (
-        #         'python %s/making-RAY-SLURM-script.py --exp-name %s --command "python -u %s/makeOri.py "$SLURM_CPUS_PER_TASK"" --partition %s >>out.log'
-        #         % (launchOri_workingdir, model_now, model_tmp_path, partition_choice)
-        #     )
-            # print(launch_one_command)
-            # task.write(launch_one_command + "\n")
-
-    #     cwd = os.getcwd()
-    #     os.chdir(launchOri_workingdir)
-    #     sbatch_cmd = ('sbatch -n %s -c 125 -p %s -J RAY disBatch %s' % (
-    #         n_node,
-    #         partition_choice,
-    #         task_path,
-    #     )
-    #     )
-    #     subprocess.run(sbatch_cmd,shell=True,check=True)
-    #     os.chdir(cwd)
-
-    # else:
-        # curdir = os.getcwd()
-        # os.chdir(model_tmp_path)
-        # makeOri_cmd = "python makeOri.py"
-        # subprocess.Popen(makeOri_cmd, shell=True)
-        # # time.sleep(1)
-        # os.chdir(curdir)
 
 def validate_zipfile(path_to_zipfile):
     try:

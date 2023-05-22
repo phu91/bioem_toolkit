@@ -125,9 +125,10 @@ class NORMAL_MODE_ROUND1:
 
         cwd = os.getcwd()
         os.chdir(centraltask_path)
-        n_node = input("How many nodes to request for disBatch?\n")
+        n_task = input("How many tasks to run concurrently using disBatch? This will utilize 128 core/node.\n")
+        #### We request to run n=1 task alone in the /CENTRAL_TASK_R1 on a node (-c 128 cores). This needs to be adjusted for optimized performance!!!
         sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J R1 disBatch %s' % (
-            n_node,
+            n_task,
             partition_choice,
             centraltask_filename,
         )
@@ -162,7 +163,7 @@ class NORMAL_MODE_ROUND2:
         partition_choice = choosing_cluster(0)
         if partition_choice is not None:
             n_node = input("How many nodes to request for disBatch?\n")
-            n_cpu = int(n_node)*128
+#            n_cpu = int(n_node)*128
         else:   ### LOCAL MACHINE
             n_node = "1"
             n_cpu = "32"
@@ -359,10 +360,10 @@ class NORMAL_MODE_ROUND2:
         cwd = os.getcwd()
         os.chdir(centraltask_path)
         # n_core = n_node*128
-        n_cpu ="128"
-        sbatch_cmd = ('sbatch -n %s -c %s -p %s -J QM disBatch %s' % (
-            n_node,
-            n_cpu,
+        n_task = str(int(n_node)*128)
+        sbatch_cmd = ('sbatch -n %s -c 1 -p %s -J QM disBatch %s' % (
+            n_task,
+            #n_cpu,
             partition_choice,
             centraltask_filename,
         )
@@ -411,10 +412,9 @@ class NORMAL_MODE_ROUND2:
         # print(os.getcwd())
         # sbatch -n 2 -c 128 -p ccm -J test disBatch CENTRAL_TASK_R1
         n_node = input("How many nodes to request for disBatch?\n")
-        n_cpu ="128"
-        sbatch_cmd = ('sbatch -n %s -c %s -p %s -J R2 disBatch %s' % (
-            n_node,
-            n_cpu,
+        n_task = str(int(n_node)*128)
+        sbatch_cmd = ('sbatch -n %s -c 1 -p %s -J R2 disBatch %s' % (
+            n_task,
             partition_choice,
             centraltask_r2_file_path,
         )

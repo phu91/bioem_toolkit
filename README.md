@@ -55,20 +55,47 @@ After extracting PDB files, run this script in `tools/prep_models_step1.sh` to c
 ./prep_models_step2.sh
 ``` 
 
-### NOTES:
-**PLEASE CHECK** the `library/parameters/Param_BioEM_ABC_template` before reading the  next section because this template will be used to run BioEM many times. 
+## Warning:
+**ALWAYS CHECK** the parameter files in `library/parameters` such as `Param_BioEM_template` or any slurm submission scripts before running bioem_toolkit.
+
+`MODEL_LIST` and ` GROUP_LIST` can be found in the `test/`. BioEM is very delicate and serious about file handling, **PLEASE DO NOT CHANGE** anything if you are not sure about its functions because these small changes (etc., names) can cause BioEM to haul. 
 
 ## Usage
 `run_dry` provides the running command to activate the interactive mode of the BioEM toolkit for `FIRST TIME` users. A command-line mode is activated with the flag `-cmd`. Notes: It is recommended to use a full (absolute) path format.  
 
-A template for `MODEL_LIST` and ` GROUP_LIST` can be found in `test/`
+A template for `MODEL_LIST` and ` GROUP_LIST` can be found in `test/`.
+
+**To run the bioem_toolkit, one would simply execute the `run_dry` file. Make sure that you change all the paths accordingly to your machine:** 
+
+```bash
+./run_dry
+```
+
+### Required arguments:
+**-mp**: Absolute path to where models are stored.
+
+**-ml**: Text file with a list of all models.
+
+**-gl**: List of groups which particles are organised into. Eg. 0-10k 0-10k.mrcs 10000
+
+**-param**: Absolute path to parameters files which this script uses. Usually stored in the github repo in 'bioem_toolkit/library/parameters'.
+
+**-pp**: Absolute path of directory where particle .mrcs files are stored.
+
+**-op**: Directory where output will be stored.
+
+### A more elaborated help menu is activated as:
+```bash 
+python bioem_toolkit/bioem_toolkit.py -h
+```
+
+### bioem_toolkit: Current parameters
+
+
 
 
 # **Current development:**
 
-Branch "phu": NORMAL MODE ROUND 1/2 is working in the `INTERACTIVE MODE`
-
-Branch "miro" is coming soon!!
 
 ## Contributing
 

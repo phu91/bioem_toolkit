@@ -1,13 +1,7 @@
 ### This is just a template. PLEASE USE IT WITH CARE!
-<<<<<<< HEAD:library/parameters/Param_BioEM_ABC_template
-# SYSTEM: 
-PIXEL_SIZE     1.077 
-NUMBER_PIXELS  256
-=======
 # SYSTEM: HER2
 PIXEL_SIZE     1.302000
 NUMBER_PIXELS  300
->>>>>>> phu1:library/parameters/Param_BioEM_template
 USE_QUATERNIONS             
 CTF_DEFOCUS 0.6 3.0 15
 CTF_B_ENV   1 1 1  

@@ -1,5 +1,5 @@
 #!/bin/bash -l
-
+unset SLURM_JOBID
 # Standard output and error:
 # Initial working directory:
 # Job Name:
@@ -26,4 +26,4 @@ export GPU=0
 export BIOEM_DEBUG_OUTPUT=0
 export BIOEM_ALGO=2
 
-mpirun --map-by socket:pe=$OMP_NUM_THREADS -np 16 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM --Modelfile WhereModel/WhatModel.txt --Particlesfile WhereParticle --ReadMRC --Inputfile ../Param_BioEM_ABC --ReadOrientation ../Quat_36864
+mpirun --map-by socket:pe=$OMP_NUM_THREADS -np 16 /mnt/home/pcossio/BenchmarkBioEM/BioEM_Mod_Gera/bioEM --Modelfile WhereModel/WhatModel.txt --Particlesfile WhereParticle --ReadMRC --Inputfile WhereParam --ReadOrientation WhereQuatern --OutputFile WhereOutputStored

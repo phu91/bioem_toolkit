@@ -1,7 +1,13 @@
 ### This is just a template. PLEASE USE IT WITH CARE!
+<<<<<<< HEAD:library/parameters/Param_BioEM_ABC_template
 # SYSTEM: 
 PIXEL_SIZE     1.077 
 NUMBER_PIXELS  256
+=======
+# SYSTEM: HER2
+PIXEL_SIZE     1.302000
+NUMBER_PIXELS  300
+>>>>>>> phu1:library/parameters/Param_BioEM_template
 USE_QUATERNIONS             
 CTF_DEFOCUS 0.6 3.0 15
 CTF_B_ENV   1 1 1  
@@ -10,5 +16,5 @@ PRIOR_DEFOCUS_CENTER 1.6
 SIGMA_PRIOR_DEFOCUS 2.0
 SIGMA_PRIOR_B_CTF     1  
 DISPLACE_CENTER  60 2
-ANG_PROB_FILE angle_output_probabilities.txt
+ANG_PROB_FILE WhereRound1AngleFile
 WRITE_PROB_ANGLES 300

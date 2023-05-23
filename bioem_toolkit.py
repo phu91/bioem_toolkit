@@ -5,283 +5,16 @@ import subprocess
 import pandas as pd
 import mrcfile as mrc
 import numpy as np
-
+# import ray
 # adding library to the system path
-sys.path.insert(0, "library/parameters")
 # from multiprocessing import Process
 
 #TODO refactor code so that consensus is just a type of job. 
 # TODO submit make orientation for consensus job. 
 # TODO make grid multiplication a part of round 1. 
 
-def timer_func(func):
-    # This function shows the execution time of
-    # the function object passed
-    def wrap_func(*args, **kwargs):
-        t1 = time()
-        result = func(*args, **kwargs)
-        t2 = time()
-        print(f"========== Function {func.__name__!r} executed in {(t2-t1):.4f}s")
-        return result
-
-    return wrap_func
-
-
-def choosing_cluster():
-    cluster_choice = input("Do you want to work on CLUSTER? Yes (1) or No (0): \n")
-    if cluster_choice == "1":
-        partition_choice = input("Please select your PARTITION on SLURM: \n")
-        return partition_choice
-    else:
-        print("\n========== MULTIPLY_QUAT will be done on local machine")
-        return None
-
-def counter(baseZero,count):
-    return int(baseZero) + count
-
-def clean_R1_Probability(working_dir, r1_output: str, bioEM_template,group_now):
-    r1_read = open(r1_output, "r+")
-    tmp_file = open("tmp_prob", "w+")
-    lines = r1_read.readlines()
-    for line in range(4, len(lines), 2):
-        tmp_file.write(lines[line])
-    tmp_file.close()
-    r1_read.close()
-    r1_result = pd.read_csv("tmp_prob", delim_whitespace="True", header=None,dtype=str)
-    r1_result = r1_result.iloc[:, [1, 4, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]]
-    label_list = [
-        "particle",
-        "MaxLogProb",
-        "q1",
-        "q2",
-        "q3",
-        "q4",
-        "CTF_amp",
-        "CTF_defocus",
-        "CTF_B-Env",
-        "x_cen",
-        "y_cen",
-        "normalization",
-        "offsett",
-    ]
-    r1_result.columns = label_list
-    # print(r1_result.head(3))
-    for ind, particle in r1_result.iterrows():
-        CTF_DEFOCUS_VALUE = particle["CTF_defocus"]
-        with open(bioEM_template, "r+") as file1:
-            with open(working_dir + "/parameters/Parm_%s" % (ind+int(group_now["start"])), "w+") as file2:
-                lines = file1.readlines()
-                # print(lines)
-                for line in lines:
-                    line = line.split()
-                    if line[0] == "CTF_DEFOCUS":
-                        line[1] = CTF_DEFOCUS_VALUE
-                        line[2] = CTF_DEFOCUS_VALUE
-                        line[3] = 1
-                    elif line[0] == "SIGMA_PRIOR_DEFOCUS":
-                        line[1] = 0.3
-                    string = "  ".join(map(str, line))
-                    file2.write(string + "\n")
-    # os.remove("tmp_prob")
-
-
-def making_orientations_submission(
-    libraryParmPath,
-    r1_foo,
-    model_now,
-    group_now,
-    model_tmp_path,
-    model_group_path,
-    partition_choice,
-    path_to_output,
-    startFrame
-):
-    launchOri_workingdir = os.path.join(path_to_output, "0-QM-tasks")
-    os.makedirs(launchOri_workingdir, exist_ok=True)
-
-    launchOri_template_path = os.path.join(
-        libraryParmPath, "launch-one-makeOri-template.sh"
-    )
-    makeOri_template_path = os.path.join(libraryParmPath, "makeOri-template.py")
-    making_ray_slurm_script_file = os.path.join(
-        libraryParmPath, "making-RAY-SLURM-script.py"
-    )
-
-    shutil.copy(makeOri_template_path, model_tmp_path + "/makeOri.py")
-    shutil.copy(launchOri_template_path, launchOri_workingdir + "/launch-one.sh")
-    shutil.copy(making_ray_slurm_script_file, launchOri_workingdir)
-
-    launchOri_workdir_file_path = os.path.join(launchOri_workingdir, "launch-one.sh")
-    making_ray_slurm_script_wordir_file_path = os.path.join(
-        launchOri_workingdir, "making-RAY-SLURM-script.py"
-    )
-    model_orientation_path = os.path.join(model_group_path, "orientations")
-    makeOri_model_tmp_file_path = os.path.join(model_tmp_path, "makeOri.py")
-
-    Quat_exe = os.path.join("library", "multiple_Quat", "multiply_quat")
-    Quat_exe_abs = os.path.abspath(Quat_exe)
-
-    with open(makeOri_template_path, "r+") as file:
-        makeOri_file = file.read()
-        makeOri_file = makeOri_file.replace("WhatMODEL", model_now)
-        makeOri_file = makeOri_file.replace("WhatGROUP", group_now)
-        makeOri_file = makeOri_file.replace("WherePROB", r1_foo)
-        makeOri_file = makeOri_file.replace("WhereOrientations", model_orientation_path)
-        makeOri_file = makeOri_file.replace("WhereQUAT", Quat_exe_abs)
-        makeOri_file = makeOri_file.replace("WhereTOOLKIT",os.path.abspath(os.path.normpath(__file__ + '/../..')))
-        makeOri_file = makeOri_file.replace("WhereWORKDIR2",model_group_path)
-        makeOri_file = makeOri_file.replace("WhenStart",startFrame)
-
-        with open(makeOri_model_tmp_file_path, "w+") as outfile:
-            outfile.write(makeOri_file)
-
-    if partition_choice != None:
-        making_ray_slurm_script_wordir_file_path_abs = os.path.abspath(
-            making_ray_slurm_script_wordir_file_path
-        )
-        with open(making_ray_slurm_script_wordir_file_path_abs, "r+") as file:
-            make_slurm_launchOne_file = file.read()
-            make_slurm_launchOne_file = make_slurm_launchOne_file.replace(
-                "WhereLaunchOne", launchOri_workdir_file_path
-            )
-            with open(making_ray_slurm_script_wordir_file_path_abs, "w+") as outfile:
-                outfile.write(make_slurm_launchOne_file)
-
-        os.chmod(launchOri_workingdir + "/launch-one.sh", stat.S_IRWXU)
-        # return launchOri_workingdir
-
-        task_path = os.path.join(
-            launchOri_workingdir, "task_making_orientations_%s" % (group_now)
-        )
-        model_tmp_path = os.path.join(
-            path_to_output, model_now, "round2", group_now, "tmp_files"
-        )
-
-        with open(task_path, "a+") as task:
-            launch_one_command = (
-                'python %s/making-RAY-SLURM-script.py --exp-name %s --command "python %s/makeOri.py" --num-nodes 1 --partition %s >>out.log'
-                % (launchOri_workingdir, model_now, model_tmp_path, partition_choice)
-            )
-            # print(launch_one_command)
-            task.write(launch_one_command + "\n")
-            # time.sleep(1)
-            curdir = os.getcwd()
-            os.chdir(launchOri_workingdir)
-            print(
-                "\n========== Run MQ on SLURM for MODEL: %s GROUP: %s"
-                % (model_now, group_now)
-            )
-            subprocess.Popen(launch_one_command, shell=True)
-            os.chdir(curdir)
-    else:
-        curdir = os.getcwd()
-        os.chdir(model_tmp_path)
-        makeOri_cmd = "python makeOri.py"
-        subprocess.Popen(makeOri_cmd, shell=True)
-        # time.sleep(1)
-        os.chdir(curdir)
-
-def validate_zipfile(path_to_zipfile):
-    try:
-        with zipfile.ZipFile(path_to_zipfile, "r") as zf:
-            print("========== ZIP FILE OK!")
-    except zipfile.BadZipFile:
-        raise Exception("========== BAD ZIP FILE. ALL FILES ARE SAVED")
-    try:
-        with zipfile.ZipFile(path_to_zipfile, "r") as zf:
-            print("========== ZIP FILE OK!")
-    except zipfile.BadZipFile:
-        raise Exception("========== BAD ZIP FILE!")
-
-
-def process_output_round2(delete_choice, MODEL, GROUP, path_to_output, nparticle: int,startFrame, endFrame):
-    sorted_output_path = os.path.join(
-        path_to_output, "OutPut_SORTED_%s-%s" % (MODEL, GROUP)
-    )
-    with open(sorted_output_path, "w+") as out_tmp_1:
-        with zipfile.ZipFile(
-            path_to_output + "/OutPuts_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
-        ) as out_zip:
-            for i in range(nparticle):
-                with open(path_to_output + "/out-%s" % (counter(startFrame,i)), "r+") as out_tmp_2:
-                    lines = out_tmp_2.readlines()
-                    for line in range(5, len(lines)):
-                        line = lines[line].split()
-                        if line[2] == "LogProb:":
-                            line[1] = counter(startFrame,i)
-                            string = "  ".join(map(str, line))
-                            out_tmp_1.write(string + "\n")
-                            out_tmp_1.flush()
-                out_tmp_2.close()
-                out_zip.write(
-                    path_to_output + "/out-%s" % (counter(startFrame,i)),
-                    os.path.basename(path_to_output + "/out-%s" % (i)),
-                )
-    out_zip.close()
-    zipfile_path = os.path.join(
-        path_to_output, "OutPuts_ALL_%s_%s.zip" % (MODEL, GROUP)
-    )
-    if delete_choice == "0":
-        try:
-            with zipfile.ZipFile(zipfile_path, "r") as zf:
-                print("========== ZIP FILE OK! %s cleaned." % (MODEL))
-                for i in range(nparticle):
-                    os.remove(path_to_output + "/out-%s" % (i))
-            zf.close()
-        except zipfile.BadZipFile:
-            raise Exception("========== BAD ZIP FILE! FILES ARE SAVED.")
-    else:
-        print("========== Original files will be SAVED.")
-
-
-def clean_params(delete_choice, MODEL, GROUP, path_to_param, nparticle: int,startFrame, endFrame):
-    subparam_list = ["parameters", "orientations"]
-    for sub_dir in range(len(subparam_list)):
-        group_param_path = os.path.join(path_to_param, subparam_list[sub_dir])
-        if os.path.basename(group_param_path) == "parameters":
-            with zipfile.ZipFile(
-                group_param_path + "/PARM_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
-            ) as out_zip:
-                for i in range(nparticle):
-                    with open(group_param_path + "/Parm_%s" % (counter(startFrame,i)), "r+") as out_tmp:
-                        out_zip.write(
-                            group_param_path + "/Parm_%s" % (counter(startFrame,i)),
-                            os.path.basename(group_param_path + "/Parm_%s" % (i)),
-                        )
-                    out_tmp.close()
-            out_zip.close()
-            path_to_zipfile = os.path.join(
-                group_param_path, "PARM_ALL_%s_%s.zip" % (MODEL, GROUP)
-            )
-            validate_zipfile(path_to_zipfile)
-            if delete_choice == "0":
-                for i in range(nparticle):
-                    # print("Parm_%s is removed."%(i))
-                    os.remove(group_param_path + "/Parm_%s" % (counter(startFrame,i)))
-        elif os.path.basename(group_param_path) == "orientations":
-            with zipfile.ZipFile(
-                group_param_path + "/ANG_ALL_%s_%s.zip" % (MODEL, GROUP), "w"
-            ) as out_zip:
-                for i in range(nparticle):
-                    with open(
-                        group_param_path + "/ANG_R2_%s" % (counter(startFrame,i)), "r+"
-                    ) as out_tmp:
-                        out_zip.write(
-                            group_param_path + "/ANG_R2_%s" % (counter(startFrame,i)),
-                            os.path.basename(group_param_path + "/ANG_for-R2-%s" % (i)),
-                        )
-                    out_tmp.close()
-            out_zip.close()
-            path_to_zipfile = os.path.join(
-                group_param_path, "ANG_ALL_%s_%s.zip" % (MODEL, GROUP)
-            )
-            validate_zipfile(path_to_zipfile)
-            if delete_choice == "0":
-                for i in range(nparticle):
-                    # print("ANG_for-R2-%s is removed."%(i))
-                    os.remove(group_param_path + "/ANG_for-R2-%s" % (i))
-
-    print("========== %s is CLEANED." % (MODEL))
+sys.path.insert(0, "helper_functions.py")
+from helper_functions import *
 
 
 #################################### NORMAL CLASSES
@@ -299,8 +32,8 @@ class NORMAL_MODE_ROUND1:
         self.output_path = output_path
 
     def PREP(self):
-        global partition_choice
-        partition_choice = choosing_cluster()
+        global partition_choice   #### MAYBE ADD N_NODE
+        partition_choice = choosing_cluster(1)
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -327,11 +60,16 @@ class NORMAL_MODE_ROUND1:
                 os.makedirs(r1_group_path, exist_ok='True')
 
                 shutil.copy(os.path.join(mp_v, MODEL + ".txt"), a_model_path)
-                shutil.copy(
-                    param_v + "/Param_BioEM_ABC_template",
-                    round1_path + "/Param_BioEM_ABC",
-                )
                 shutil.copy(param_v + "/Quat_36864", round1_path)
+
+                with open(param_v + "/Param_BioEM_template", "r+") as file:
+                    param_file = file.read()
+                    param_file_out_path = str(round1_path) + "/Param_BioEM_%s"%(GROUP['group'])
+                    # print(param_file_out_path)
+                    param_file = param_file.replace("WhereRound1AngleFile", r1_group_path+"/angle_output_probabilities.txt")
+                    with open(param_file_out_path, "w+") as outfile:
+                        outfile.write(param_file)
+                    os.chmod(param_file_out_path, stat.S_IRWXU)
 
                 with open(param_v + "/slurm-r1-template.sh", "r+") as file:
                     slurm_file = file.read()
@@ -346,15 +84,21 @@ class NORMAL_MODE_ROUND1:
                     slurm_file = slurm_file.replace("WhereModel", os.path.join(self.model_path))
                     slurm_file = slurm_file.replace("WhatGroup", GROUP["group"])
                     slurm_file = slurm_file.replace("WhatPartition", partition_choice)
+                    slurm_file = slurm_file.replace("WhereParam", os.path.join(round1_path,"Param_BioEM_%s"%(GROUP['group'])))
+                    slurm_file = slurm_file.replace("WhereQuatern", os.path.join(round1_path,"Quat_36864") )
+                    slurm_file = slurm_file.replace("WhereOutputStored", os.path.join(r1_group_path,"Output_Probabilities") )
+
 
                     with open(slurm_file_out_path, "w+") as outfile:
                         outfile.write(slurm_file)
-                    outfile.close()
-                file.close()
+                    os.chmod(slurm_file_out_path, stat.S_IRWXU)
 
     def RUN(self):
         # print('running!')
-        # partition_choice = choosing_cluster()
+        partition_choice = choosing_cluster(1)
+
+        centraltask_path = os.path.join(self.output_path,"0-CentralTask")
+        os.makedirs(centraltask_path,exist_ok=True)
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
         GROUPS = pd.read_csv(
@@ -363,24 +107,44 @@ class NORMAL_MODE_ROUND1:
             delim_whitespace="True",
             comment="#",dtype=str
         )
-        for MODEL in MODELS:
-            MODEL = MODEL.strip()
-            if MODEL[0] == "#":
-                print("%s is skipped." % (MODEL[1:]))
-                continue
-            a_model_path = os.path.join(op_v, MODEL)
-            round1_path = os.path.join(a_model_path, "round1")
-            for ind, GROUP in GROUPS.iterrows():
-                r1_group_path = os.path.join(round1_path, GROUP["group"])
-                cwd = os.getcwd()
-                os.chdir(r1_group_path)
-                slurm_file_out_path = "slurm-r1-rusty.sh"
+        centraltask_filename ='CENTRAL_TASK_R1'
 
-                os.chmod(slurm_file_out_path, stat.S_IRWXU)
-                # print(slurm_file_out_path)
-                sbatch_cmd = ('sbatch %s'%(slurm_file_out_path))
-                subprocess.run(str(sbatch_cmd), shell=True, check=True)
-                os.chdir(cwd)
+        with open(centraltask_path+"/CENTRAL_TASK_R1","w+") as ct:
+            for MODEL in MODELS:
+                MODEL = MODEL.strip()
+                if MODEL[0] == "#":
+                    print("%s is skipped." % (MODEL[1:]))
+                    continue
+                a_model_path = os.path.join(op_v, MODEL)
+                round1_path = os.path.join(a_model_path, "round1")
+                for ind, GROUP in GROUPS.iterrows():
+                    r1_group_path = os.path.join(round1_path, GROUP["group"])
+                    r1_slurm_file_path = os.path.join(r1_group_path,"slurm-r1-rusty.sh")
+                    r1_slurm_file_abs = os.path.abspath(r1_slurm_file_path)
+                    ct.write("%s &> REPORT_R1_%s_%s\n"%(r1_slurm_file_abs,MODEL,GROUP['group']))
+
+        cwd = os.getcwd()
+        os.chdir(centraltask_path)
+        n_task = input("How many tasks to run concurrently using disBatch? This will utilize 128 core/node.\n")
+        #### We request to run n=1 task alone in the /CENTRAL_TASK_R1 on a node (-c 128 cores). This needs to be adjusted for optimized performance!!!
+        sbatch_cmd = ('sbatch -n %s -c 128 -p %s -J R1 disBatch %s' % (
+            n_task,
+            partition_choice,
+            centraltask_filename,
+        )
+        )
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(cwd)
+
+                # cwd = os.getcwd()
+                # os.chdir(r1_group_path)
+                # slurm_file_out_path = "slurm-r1-rusty.sh"
+
+                # os.chmod(slurm_file_out_path, stat.S_IRWXU)
+                # # print(slurm_file_out_path)
+                # sbatch_cmd = ('sbatch %s'%(slurm_file_out_path))
+                # subprocess.run(str(sbatch_cmd), shell=True, check=True)
+                # os.chdir(cwd)
 
 
 class NORMAL_MODE_ROUND2:
@@ -396,7 +160,18 @@ class NORMAL_MODE_ROUND2:
 
     def PREP(self):
         global cluster_choice, partition_choice
-        partition_choice = choosing_cluster()
+        partition_choice = choosing_cluster(0)
+        if partition_choice is not None:
+            n_node = input("How many nodes to request for disBatch?\n")
+#            n_cpu = int(n_node)*128
+        else:   ### LOCAL MACHINE
+            n_node = "1"
+            n_cpu = "32"
+            
+        centraltask_path = os.path.join(op_v,"1-QMTask")
+        if os.path.isdir(centraltask_path) is True:
+            shutil.rmtree(centraltask_path)
+            
         MODELS_LIST = open(self.model_list)
         MODELS = MODELS_LIST.readlines()
 
@@ -408,6 +183,22 @@ class NORMAL_MODE_ROUND2:
         )
         # print(GROUPS)
         # Strips the newline character
+        centralTask_R2_path = os.path.join(self.output_path,"2-CentralTask-R2")
+        check_path = os.path.isdir(centralTask_R2_path)
+        if check_path is True:
+            overwrite = input("\n========== Overwrite %s? Y/N\n"%(centralTask_R2_path))
+            if overwrite =='Y' or overwrite =='y':
+                shutil.rmtree(centralTask_R2_path)
+                os.makedirs(centralTask_R2_path,exist_ok = True)
+            else:
+                print("\n========== 2-CentralTask-R2 IS NOT UPDATED!!\n")
+        else:
+            os.makedirs(centralTask_R2_path,exist_ok = True)
+
+        task_path = os.path.join(
+            centralTask_R2_path,"CENTRAL_TASK_R2_LAUNCH"
+        )
+
         for MODEL in MODELS:
             MODEL = MODEL.strip()
             if MODEL[0] == "#":
@@ -431,6 +222,13 @@ class NORMAL_MODE_ROUND2:
                     "/outputs",
                     "/tmp_files",
                 ]
+                output_path = os.path.join(r2_group_path,"outputs")
+                orientations_path = os.path.join(r2_group_path,"orientations")
+                parameters_path = os.path.join(r2_group_path,"parameters")
+
+                output_path_abs = os.path.abspath(output_path)
+                orientations_path_abs = os.path.abspath(orientations_path)
+                parameters_path_abs = os.path.abspath(parameters_path)
 
                 for sub_dir in range(len(subdir_list)):
                     os.makedirs(r2_group_path + subdir_list[sub_dir], exist_ok="True")
@@ -440,11 +238,22 @@ class NORMAL_MODE_ROUND2:
 
                     if os.path.basename(group_param_path) == "tmp_files":
                         shutil.copy(
-                        param_v + "/Param_BioEM_ABC_template", group_param_path
+                        param_v + "/Param_BioEM_template", group_param_path
                         )
+
                         param_bio_template_path = os.path.join(
-                        group_param_path, "Param_BioEM_ABC_template"
+                        group_param_path, "Param_BioEM_template"
                         )
+                        with open(param_bio_template_path, "r+") as file:
+                            param_file = file.readlines()
+                            param_file.remove("ANG_PROB_FILE WhereRound1AngleFile\n")   ### FOR SPEEDING UP SINCE R2 DOES NOT NEED TO WRITE OUT BEST ANGLES
+                            param_file.remove("WRITE_PROB_ANGLES 300\n")
+                            # param_file = param_file.replace("WhereRound1AngleFile", r2_group_path+"/tmp_files/angle_output_probabilities.txt")
+                            string = "  ".join(map(str, param_file))
+                            with open(param_bio_template_path, "w+") as outfile:
+                                outfile.write(str(string))
+                        os.chmod(param_bio_template_path, stat.S_IRWXU)
+
                         shutil.copy(
                         r1_group_path + "/Output_Probabilities",
                         group_param_path + "/Output_Probabilities-R1",
@@ -459,6 +268,7 @@ class NORMAL_MODE_ROUND2:
                         param_bio_template_path,
                         GROUP
                         )
+
                         print("\n========== Done with PARAMETER FILES for %s" % (MODEL))
 
                         r1_prob = group_param_path + "/PROB_ANGLE_R1.txt"
@@ -466,7 +276,7 @@ class NORMAL_MODE_ROUND2:
                             r1_group_path + "/angle_output_probabilities.txt",
                             r1_prob,
                         )
-
+                        
                         making_orientations_submission (
                             libraryParmPath=self.param_path,
                             r1_foo=r1_prob,
@@ -475,10 +285,11 @@ class NORMAL_MODE_ROUND2:
                             model_tmp_path=group_param_path,
                             model_group_path=r2_group_path,
                             partition_choice=partition_choice,
+                            n_node=n_node,
+                            n_cpu=n_cpu,
                             path_to_output=self.output_path,
                             startFrame=GROUP['start']
                         )
-
 
                     elif os.path.basename(group_param_path) == "tasks":
                     # if os.path.basename(group_param_path)=="tasks":   # FOR TESTING
@@ -510,6 +321,18 @@ class NORMAL_MODE_ROUND2:
                                             line[1] = "WhereModel=%s" % (
                                                 os.path.abspath(self.model_path)
                                             )
+                                        elif line[1] =="WhereOutput=WhereOutput":
+                                            line[1] = "WhereOutput=%s" % (
+                                                output_path_abs
+                                            )
+                                        elif line[1] =="WhereOrientation=WhereOrientation":
+                                            line[1] = "WhereOrientation=%s" % (
+                                                orientations_path_abs
+                                            )
+                                        elif line[1] =="WhereParm=WhereParm":
+                                            line[1] = "WhereParm=%s" % (
+                                                parameters_path_abs
+                                            )
                                     # print(*line)
                                     string = "  ".join(map(str, line))
                                     launchOut.write(string + "\n")
@@ -517,28 +340,42 @@ class NORMAL_MODE_ROUND2:
                         launchIn.close()
                         os.chmod(group_param_path + "/launch-one.sh", stat.S_IRWXU)
                         # os.remove(launch_one_path)
+                        launch_one_group_path = os.path.join(group_param_path,"launch-one.sh")
+                        launch_one_group_path_abs = os.path.abspath(launch_one_group_path)
 
-                        task_path = os.path.join(
-                            group_param_path, "task_%s_%s" % (MODEL, GROUP["group"])
+                with open(task_path, "a+") as task:
+                    for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
+                        # print(i)
+                        launch_one_command = (
+                            "%s %s %s %s &>> REPORT_R2_%s_%s" ################################
+                            % (launch_one_group_path_abs,i, GROUP["group"], MODEL,GROUP["group"],MODEL)
                         )
+                        task.write(launch_one_command + "\n")
+                print(
+                    "\n========== Done with creating Task File for %s" % (MODEL)
+                )
 
-                        # print(start,end,GROUP['nframe'])
-                            # print(i)
-                        with open(task_path, "w+") as task:
-                            for i in range(int(GROUP["start"]),int(GROUP["end"])+1):
-                                # print(i)
-                                launch_one_command = (
-                                    "./launch-one.sh %s %s %s.txt  &>> out.log"
-                                    % (i, GROUP["group"], MODEL)
-                                )
-                                task.write(launch_one_command + "\n")
-                        print(
-                            "\n========== Done with creating Task File for %s" % (MODEL)
-                        )
+        centraltask_filename = "CENTRAL_TASK_R2_QM"
 
+        cwd = os.getcwd()
+        os.chdir(centraltask_path)
+        # n_core = n_node*128
+        n_task = str(int(n_node)*128)
+        sbatch_cmd = ('sbatch -n %s -c 1 -p %s -J QM disBatch %s' % (
+            n_task,
+            #n_cpu,
+            partition_choice,
+            centraltask_filename,
+        )
+        )
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(cwd)
 
     def RUN(self):
-        partition_choice = choosing_cluster()
+        central_task_r2_path = os.path.join(self.output_path,"2-CentralTask-R2")
+        os.makedirs(central_task_r2_path, exist_ok=True)
+
+        partition_choice = choosing_cluster(0)
         try:
             subprocess.check_output(
                 ["disBatch", "--help"], stderr=subprocess.STDOUT
@@ -548,40 +385,42 @@ class NORMAL_MODE_ROUND2:
             print(
                 "\nYou need to load disBatch to launch ROUND 2. PROGRAM TERMINATED!!!\n"
             )
-        else:
-            MODELS_LIST = open(self.model_list)
-            MODELS = MODELS_LIST.readlines()
-            GROUPS = pd.read_csv(
-                self.group_list,
-                names=["particle_file", "group", "start", "end", "nframe"],
-                delim_whitespace="True",
-                comment="#",
-            )
-            for MODEL in MODELS:
-                MODEL = MODEL.strip()
-                if MODEL[0] == "#":
-                    print("========== %s is skipped." % (MODEL[1:]))
-                    continue
-                a_model_path = os.path.join(op_v, MODEL)
-                round2_path = os.path.join(a_model_path, "round2")
-                for ind, GROUP in GROUPS.iterrows():
-                    r2_group_path = os.path.join(round2_path, GROUP["group"])
-                    task_path = os.path.join(r2_group_path, "tasks")
-                    task_file_name = "task_%s_%s" % (MODEL, GROUP["group"])
-                    task_file_path = os.path.join(task_path,task_file_name)
+        # else:
+            # MODELS_LIST = open(self.model_list)
+            # MODELS = MODELS_LIST.readlines()
+            # GROUPS = pd.read_csv(
+            #     self.group_list,
+            #     names=["particle_file", "group", "start", "end", "nframe"],
+            #     delim_whitespace="True",
+            #     comment="#",
+            # )
+            # for MODEL in MODELS:
+            #     MODEL = MODEL.strip()
+            #     if MODEL[0] == "#":
+            #         print("========== %s is skipped." % (MODEL[1:]))
+            #         continue
+            #     a_model_path = os.path.join(op_v, MODEL)
+            #     round2_path = os.path.join(a_model_path, "round2")
+            #     for ind, GROUP in GROUPS.iterrows():
+        centraltask_r2_path = os.path.join(self.output_path, "2-CentralTask-R2")
+        centraltask_r2_file_path = os.path.join(centraltask_r2_path,"CENTRAL_TASK_R2_LAUNCH")
 
-                    current_dir = os.getcwd()
-                    # print(current_dir,task_path)
-                    os.chdir(task_path)
-                    # print(os.getcwd())
-                    sbatch_cmd = ('sbatch -p %s -J %s -t 125 disBatch %s' % (
-                        partition_choice,
-                        MODEL,
-                        task_file_name,
-                    )
-                    )
-                    subprocess.run(sbatch_cmd,shell=True,check=True)
-                    os.chdir(current_dir)
+        ########### THIS NEED TO MOVE OUTOF THE LOOP
+        current_dir = os.getcwd()
+        # print(current_dir,task_path)
+        os.chdir(centraltask_r2_path)
+        # print(os.getcwd())
+        # sbatch -n 2 -c 128 -p ccm -J test disBatch CENTRAL_TASK_R1
+        n_node = input("How many nodes to request for disBatch?\n")
+        n_task = str(int(n_node)*128)
+        sbatch_cmd = ('sbatch -n %s -c 1 -p %s -J R2 disBatch %s' % (
+            n_task,
+            partition_choice,
+            centraltask_r2_file_path,
+        )
+        )
+        subprocess.run(sbatch_cmd,shell=True,check=True)
+        os.chdir(current_dir)
 
     def CLEAN(self):
         delete_choice = input(
@@ -682,7 +521,7 @@ class CONSENSUS_MODE_ROUND_1:
             os.makedirs(r1_group_path, exist_ok="True")
             shutil.copy(os.path.join(mp_v, MODEL + ".txt"), consensus_MODEL_path)
             shutil.copy(
-                param_v + "/Param_BioEM_ABC_template", round1_path + "/Param_BioEM_ABC"
+                param_v + "/Param_BioEM_template", round1_path + "/Param_BioEM_ABC"
             )
             shutil.copy(param_v + "/Quat_36864", round1_path)
             with open(param_v + "/slurm-r1-template.sh", "r+") as file:
@@ -909,7 +748,7 @@ class CONSENSUS_MODE_ROUND_2:
                 )
 
                 if os.path.basename(group_param_path) == "tmp_files":
-                    # self.param_path+"Param_BioEM_ABC_template"
+                    # self.param_path+"Param_BioEM_template"
                     param_bio_R1_path = os.path.join(
                         consensus_round1_path, "Param_BioEM_ABC"
                     )
@@ -1052,7 +891,7 @@ class CONSENSUS_MODE_ROUND_2:
                 current_directory = os.getcwd()
                 os.chdir(task_path)
 
-                sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
+                sbatch_cmd = "sbatch -p ccb -J %s -t 128 disBatch %s" % (
                     MODEL,
                     task_file_name,
                 )
@@ -1092,7 +931,7 @@ class CONSENSUS_MODE_ROUND_2:
             task_path = os.path.join(r2_group_path, "tasks")
             task_file_name = "task_%s_%s" % (consensus_MODEL_name, GROUP["group"])
             os.chdir(task_path)
-            sbatch_cmd = "sbatch -p ccb -J %s -t 125 disBatch %s" % (
+            sbatch_cmd = "sbatch -p ccb -J %s -t 128 disBatch %s" % (
                 consensus_MODEL_name,
                 task_file_name,
             )
@@ -1330,7 +1169,7 @@ note0 = """
 ##########################################################
 CHOOSE THE MODE:
 !!!!! WARNING !!!!!
-PLEASE DOUBLE CHECK "Param_BioEM_ABC_template" BEFORE
+PLEASE DOUBLE CHECK "Param_BioEM_template" BEFORE
 GOING BEYOND THIS POINT 
 ----------------------------------------------------------
 

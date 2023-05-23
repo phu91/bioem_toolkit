@@ -1,0 +1,6 @@
+MODEL_PATH		        test/models
+MODEL_LIST_FILE_PATH 	test/MODEL_LIST
+GROUP_LIST_FILE_PATH	test/GROUP_LIST
+LIBRARY_PATH 		    bioem_toolkit/library
+PARTICLE_PATH		    test/particles
+OUTPUT_PATH		        test_dir_4

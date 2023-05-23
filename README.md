@@ -89,10 +89,6 @@ A template for `MODEL_LIST` and ` GROUP_LIST` can be found in `test/`.
 python bioem_toolkit/bioem_toolkit.py -h
 ```
 
-### bioem_toolkit: Current parameters
-
-
-
 
 # **Current development:**
 

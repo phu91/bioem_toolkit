@@ -23,15 +23,10 @@ def quat_calculation(particle_now):
     print("Run MQ on particle %s"%(particle_now))
 
     tmp_file_2_path = os.path.join(trash_collector_path,"sampling_angle_%s_%s_%s"%(particle_now,MODEL,GROUP))
-
-    # current_directory = os.getcwd()
-    # os.chdir(toolkit_place_directory)
     multiply_quat_exe_location = os.path.join(toolkit_place_directory,'bioem_toolkit/library/multiple_Quat/multiply_quat.exe')
     multiple_quat_exe_cmd ="%s %s %s %s"%(multiply_quat_exe_location,os.path.abspath(tmp_file_path),os.path.abspath(tmp_file_2_path),grid_file)
-    # os.chdir(current_directory)
     subprocess.run(multiple_quat_exe_cmd,shell=True,check=True)
     ANG_tmp_file_path = os.path.join(trash_collector_path,"ANG_R2_%s_%s_%s"%(particle_now,MODEL,GROUP))
-    # print(ANG_tmp_file_path)
 
     with open(ANG_tmp_file_path,'w+') as tmp1:
         tmp1.write(str(nTotal_orientation)+"\n")
@@ -47,12 +42,11 @@ def quat_calculation(particle_now):
                 # print(string)
                 tmp1.write("%12.6f%12.6f%12.6f%12.6f\n"%(float(string[0]),float(string[1]),float(string[2]),float(string[3])))
     shutil.copy(ANG_tmp_file_path,os.path.join(orientation_path,"ANG_R2_%s"%(particle_now+WhenStart)))
-    # os.remove(tmp_file_path)
-    # os.remove(tmp_file_2_path)
-    # os.remove(ANG_tmp_file_path)
+    os.remove(tmp_file_path)
+    os.remove(tmp_file_2_path)
+    os.remove(ANG_tmp_file_path)
 
 
-# @timer_func
 def making_orientations():
     global r1_prob_result, orientation_path, MODEL,GROUP
     MODEL="WhatMODEL"
@@ -76,12 +70,6 @@ def making_orientations():
     label_list=["particle","q1","q2","q3","q4"]
     r1_prob_result.columns=label_list
     particle_list = r1_prob_result['particle'].drop_duplicates().values
-    # ids = [quat_calculation.remote(x) for x in particle_list]
-    # ray.get(ids)
-    # print("\n========== Done with ORIENTATION FILES for MODEL: %s in GROUP: %s" % (MODEL,GROUP))
-    # ray_status_cmd = ('ray job list --log-style pretty')
-    # subprocess.run(ray_status_cmd,shell=True)
-
     return particle_list
 # ncpu = 128*2
 # print("There are %s CPUs"%(ncpu))
